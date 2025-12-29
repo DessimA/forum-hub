@@ -21,7 +21,7 @@ class CourseRepositoryTest {
     @Test
     @DisplayName("Should load a course by name")
     void shouldFindByName() {
-        String courseName = "Spring Boot 3";
+        String courseName = "Unique Course Name for Testing";
         Course course = new Course();
         course.setName(courseName);
         course.setCategory("Programming");
