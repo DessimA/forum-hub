@@ -6,98 +6,79 @@ import com.forumhub.modules.answer.mapper.AnswerMapper;
 import com.forumhub.modules.answer.repository.AnswerRepository;
 import com.forumhub.modules.topic.model.TopicStatus;
 import com.forumhub.modules.topic.repository.TopicRepository;
-import com.forumhub.modules.user.model.User;
+import com.forumhub.security.SecurityValidationService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AnswerService {
-    private final AnswerRepository repository;
+    private final AnswerRepository answerRepository;
     private final TopicRepository topicRepository;
-    private final AnswerMapper mapper;
+    private final SecurityValidationService securityService;
+    private final AnswerMapper answerMapper;
     private final com.forumhub.modules.audit.service.AuditLogService auditLogService;
 
     @Transactional
-    public AnswerResponseDTO reply(@NonNull Long topicId, @NonNull AnswerRequestDTO dto) {
-        // ... (mantém lógica de reply)
+    public AnswerResponseDTO reply(@NonNull Long topicId, @NonNull AnswerRequestDTO answerRequest) {
+        log.info("Adding new answer to topic ID: {}", topicId);
         var topic = topicRepository.findById(topicId)
-                .orElseThrow(() -> new EntityNotFoundException("Topic not found"));
-        var author = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+                .orElseThrow(() -> new EntityNotFoundException("Topic not found with ID: " + topicId));
+        
+        var author = securityService.getCurrentAuthenticatedUser();
 
-        var answer = mapper.toEntity(dto);
-        answer.setTopic(topic);
-        answer.setAuthor(author);
+        var answerEntity = answerMapper.toEntity(answerRequest);
+        answerEntity.setTopic(topic);
+        answerEntity.setAuthor(author);
 
-        return mapper.toResponseDTO(repository.save(answer));
+        var savedAnswer = answerRepository.save(answerEntity);
+        log.info("Answer added successfully with ID: {} to topic ID: {}", savedAnswer.getId(), topicId);
+        
+        return answerMapper.toResponseDTO(savedAnswer);
     }
 
     @Transactional
-    public AnswerResponseDTO markAsSolution(@NonNull Long id) {
-        var answer = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Answer not found"));
-        var currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    public AnswerResponseDTO markAsSolution(@NonNull Long answerId) {
+        log.info("Toggling solution status for answer ID: {}", answerId);
+        var answer = answerRepository.findById(answerId)
+                .orElseThrow(() -> new EntityNotFoundException("Answer not found with ID: " + answerId));
+        
+        var currentUser = securityService.getCurrentAuthenticatedUser();
 
         if (!answer.getTopic().getAuthor().getId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("Only the topic author can mark a solution");
+            log.warn("User ID: {} attempted to mark solution on topic ID: {} without permission", currentUser.getId(), answer.getTopic().getId());
+            throw new org.springframework.security.access.AccessDeniedException("Only the topic author can mark a solution");
         }
 
         answer.setSolution(!answer.getSolution());
+        log.info("Answer ID: {} solution status set to: {}", answerId, answer.getSolution());
         
         var topic = answer.getTopic();
-        boolean hasSolution = repository.findAllByTopicId(topic.getId())
+        boolean hasOtherSolution = answerRepository.findAllByTopicId(topic.getId())
                 .stream().anyMatch(r -> r.getSolution() && !r.getId().equals(answer.getId()));
 
-        topic.setStatus((answer.getSolution() || hasSolution) ? TopicStatus.RESOLVED : TopicStatus.OPEN);
+        var newStatus = (answer.getSolution() || hasOtherSolution) ? TopicStatus.RESOLVED : TopicStatus.OPEN;
+        log.debug("Updating topic ID: {} status to: {}", topic.getId(), newStatus);
+        topic.setStatus(newStatus);
 
-        return mapper.toResponseDTO(answer);
+        return answerMapper.toResponseDTO(answer);
     }
 
-        @Transactional
-
-        public void delete(@NonNull Long id, String justification) {
-
-            var answer = repository.findById(id)
-
-                    .orElseThrow(() -> new EntityNotFoundException("Answer not found"));
-
-            
-
-            validateOwnerOrModerator(answer.getAuthor());
-
-            
-
-            auditLogService.logAction("DELETE", "ANSWER", answer.getId(), answer.getMessage(), justification);
-
-            repository.delete(answer);
-
-        }
-
-    
-
-        private void validateOwnerOrModerator(User author) {
-
-            var currentUser = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-
-            boolean isModerator = currentUser.getAuthorities().stream()
-
-                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MODERATOR"));
-
-            
-
-            if (!isModerator && !author.getId().equals(currentUser.getId())) {
-
-                throw new AccessDeniedException("Permission denied");
-
-            }
-
-        }
-
+    @Transactional
+    public void delete(@NonNull Long answerId, String justification) {
+        log.info("Deleting answer ID: {} with justification: {}", answerId, justification);
+        var answer = answerRepository.findById(answerId)
+                .orElseThrow(() -> new EntityNotFoundException("Answer not found with ID: " + answerId));
+        
+        securityService.validateOwnerOrModerator(answer.getAuthor());
+        
+        auditLogService.logAction("DELETE", "ANSWER", answer.getId(), answer.getMessage(), justification);
+        answerRepository.delete(answer);
+        log.info("Answer ID: {} deleted successfully", answerId);
     }
-
-    
+}

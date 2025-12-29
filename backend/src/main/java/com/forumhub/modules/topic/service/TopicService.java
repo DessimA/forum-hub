@@ -7,115 +7,100 @@ import com.forumhub.modules.topic.dto.*;
 import com.forumhub.modules.topic.mapper.TopicMapper;
 import com.forumhub.modules.topic.model.TopicStatus;
 import com.forumhub.modules.topic.repository.TopicRepository;
-import com.forumhub.modules.user.model.User;
+import com.forumhub.security.SecurityValidationService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TopicService {
-    private final TopicRepository repository;
+    private final TopicRepository topicRepository;
     private final CourseRepository courseRepository;
     private final AnswerRepository answerRepository;
-    private final com.forumhub.modules.user.repository.UserRepository userRepository;
-    private final TopicMapper mapper;
+    private final SecurityValidationService securityService;
+    private final TopicValidationService validationService;
+    private final TopicMapper topicMapper;
     private final AnswerMapper answerMapper;
     private final com.forumhub.modules.audit.service.AuditLogService auditLogService;
 
     @Transactional
-    public TopicResponseDTO create(@NonNull TopicRequestDTO dto) {
-        var course = courseRepository.findById(dto.courseId())
-                .orElseThrow(() -> new EntityNotFoundException("Course not found"));
+    public TopicResponseDTO create(@NonNull TopicRequestDTO topicRequest) {
+        log.info("Creating new topic with title: {}", topicRequest.title());
+        validationService.validateNotDuplicate(topicRequest.title(), topicRequest.message());
         
-        var principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String email;
-        if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-            email = userDetails.getUsername();
-        } else if (principal instanceof User user) {
-            email = user.getEmail();
-        } else {
-            email = principal.toString();
-        }
+        var course = courseRepository.findById(topicRequest.courseId())
+                .orElseThrow(() -> new EntityNotFoundException("Course not found with ID: " + topicRequest.courseId()));
+        
+        var author = securityService.getCurrentAuthenticatedUser();
 
-        var author = userRepository.findByEmail(email);
-        if (author == null) {
-            throw new EntityNotFoundException("Author not found: " + email);
-        }
+        var topicEntity = topicMapper.toEntity(topicRequest);
+        topicEntity.setAuthor(author);
+        topicEntity.setCourse(course);
+        topicEntity.setStatus(TopicStatus.OPEN);
 
-        var topic = mapper.toEntity(dto);
-        topic.setAuthor(author);
-        topic.setCourse(course);
-        topic.setStatus(TopicStatus.OPEN);
-
-        return mapper.toResponseDTO(repository.save(topic));
+        var savedTopic = topicRepository.save(topicEntity);
+        log.info("Topic created successfully with ID: {}", savedTopic.getId());
+        
+        return topicMapper.toResponseDTO(savedTopic);
     }
 
     public Page<TopicResponseDTO> list(@NonNull Pageable pageable) {
-        return repository.findAll(pageable).map(mapper::toResponseDTO);
+        log.debug("Listing topics with pagination: {}", pageable);
+        return topicRepository.findAll(pageable).map(topicMapper::toResponseDTO);
     }
 
-    public TopicDetailResponseDTO getDetail(@NonNull Long id) {
-        var topic = repository.findById(id).orElseThrow();
-        var answers = answerRepository.findAllByTopicId(id).stream()
+    public TopicDetailResponseDTO getDetail(@NonNull Long topicId) {
+        log.debug("Fetching details for topic ID: {}", topicId);
+        var topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new EntityNotFoundException("Topic not found with ID: " + topicId));
+        
+        var answers = answerRepository.findAllByTopicId(topicId).stream()
                 .map(answerMapper::toResponseDTO).toList();
         
-        var dto = mapper.toDetailDTO(topic);
+        var detailDTO = topicMapper.toDetailDTO(topic);
         return new TopicDetailResponseDTO(
-            dto.id(), dto.title(), dto.message(), dto.createdAt(), 
-            dto.status(), dto.author(), topic.getAuthor().getId(), dto.authorEmail(), dto.course(), answers
+            detailDTO.id(), detailDTO.title(), detailDTO.message(), detailDTO.createdAt(), 
+            detailDTO.status(), detailDTO.author(), topic.getAuthor().getId(), detailDTO.authorEmail(), detailDTO.course(), answers
         );
     }
 
     @Transactional
-    public TopicResponseDTO update(@NonNull Long id, @NonNull TopicUpdateDTO dto) {
-        var topic = repository.findById(id).orElseThrow();
-        validateOwnerOrModerator(topic.getAuthor());
+    public TopicResponseDTO update(@NonNull Long topicId, @NonNull TopicUpdateDTO updateRequest) {
+        log.info("Updating topic ID: {}", topicId);
+        var topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new EntityNotFoundException("Topic not found with ID: " + topicId));
         
-        if (dto.title() != null) topic.setTitle(dto.title());
-        if (dto.message() != null) topic.setMessage(dto.message());
+        securityService.validateOwnerOrModerator(topic.getAuthor());
         
-        return mapper.toResponseDTO(topic);
+        if (updateRequest.title() != null) {
+            log.debug("Updating title for topic ID: {}", topicId);
+            topic.setTitle(updateRequest.title());
+        }
+        if (updateRequest.message() != null) {
+            log.debug("Updating message for topic ID: {}", topicId);
+            topic.setMessage(updateRequest.message());
+        }
+        
+        return topicMapper.toResponseDTO(topic);
     }
 
     @Transactional
-    public void delete(@NonNull Long id, String justification) {
-        var topic = repository.findById(id).orElseThrow();
-        validateOwnerOrModerator(topic.getAuthor());
+    public void delete(@NonNull Long topicId, String justification) {
+        log.info("Deleting topic ID: {} with justification: {}", topicId, justification);
+        var topic = topicRepository.findById(topicId)
+                .orElseThrow(() -> new EntityNotFoundException("Topic not found with ID: " + topicId));
         
-        auditLogService.logAction("DELETE", "TOPIC", topic.getId(), topic.getTitle() + ": " + topic.getMessage(), justification);
-        repository.delete(topic);
-    }
-
-    private void validateOwnerOrModerator(User author) {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var principal = authentication.getPrincipal();
+        securityService.validateOwnerOrModerator(topic.getAuthor());
         
-        String email;
-        if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
-            email = userDetails.getUsername();
-        } else if (principal instanceof User user) {
-            email = user.getEmail();
-        } else {
-            email = principal.toString();
-        }
-
-        var currentUser = userRepository.findByEmail(email);
-        if (currentUser == null) {
-            throw new AccessDeniedException("User not found: " + email);
-        }
-
-        boolean isModerator = authentication.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_MODERATOR"));
-        
-        if (!isModerator && !author.getId().equals(currentUser.getId())) {
-            throw new AccessDeniedException("Permission denied");
-        }
+        auditLogService.logAction("DELETE", "TOPIC", topic.getId(), topic.getTitle(), justification);
+        topicRepository.delete(topic);
+        log.info("Topic ID: {} deleted successfully", topicId);
     }
 }
