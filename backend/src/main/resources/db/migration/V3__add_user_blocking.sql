@@ -1,0 +1,2 @@
+ALTER TABLE users ADD COLUMN is_permanent_blocked BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN blocked_until TIMESTAMP NULL;
