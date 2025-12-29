@@ -1,29 +1,22 @@
-# Infrastructure and Automation Ecosystem
+# 03 - Infrastructure and Docker
 
-## Containerization with Docker
-FórumHub is designed to be environment-agnostic ("run anywhere").
+## 🐳 Containerization
+The project is 100% containerized to ensure it runs the same way on any machine. We use `docker-compose` to orchestrate three main services:
 
-### Backend Dockerfile
-Uses **Multi-stage Build** for extreme optimization:
-1. **Stage 1 (Build):** Uses the Maven image to compile code and run tests.
-2. **Stage 2 (Final):** Uses a lightweight JRE image (Eclipse Temurin) to run the generated `.jar`, reducing the image size from ~600MB to ~200MB.
+| Service | Base Image | Port | Description |
+| :--- | :--- | :--- | :--- |
+| **MySQL** | `mysql:8.4` | 3306 | Relational database. |
+| **Backend** | `eclipse-temurin:17` | 8080 | Spring Boot API. |
+| **Frontend** | `nginx:alpine` | 80/3000 | Vue.js application. |
 
-### Database (MySQL 8.0)
-Configured for persistence through volumes. Flyway migrations ensure the database schema is faithfully recreated in any new container.
+## ⚙️ Execution Profiles
+The system supports multiple profiles through Docker Compose:
+- **prod:** Optimized for performance, WARN level logs.
+- **dev:** Hot-reload enabled, DEBUG level logs.
+- **test:** In-memory H2 database, automatic data cleanup.
 
-## Automation System (Shell Scripts)
-The `automation/run.sh` script is the core of the developer experience.
-
-### Script Features:
-- **Requirement Verification:** Checks if Docker and Docker Compose are installed before starting.
-- **Profile Management:**
-  - `dev`: Activates DevTools and detailed logs.
-  - `test`: Starts ephemeral containers only for running the test suite.
-  - `prod`: Strict security settings and Nginx for the frontend.
-- **Wait Orchestration:** The script uses `healthchecks` to ensure MySQL is accepting connections before attempting to start the Backend, preventing initialization failures.
-
-## Simulated CI/CD Workflow
-Although the project runs locally, the folder structure and scripts are ready for integration with GitHub Actions or Jenkins:
-1. `cleanup.ps1` cleans the workspace.
-2. `test.sh` performs full validation.
-3. `docker-compose.yml` handles deployment.
+## 🗄️ Database Evolution (Flyway)
+Tables are not created manually. Flyway manages migrations:
+- `V1`: Initial structure (tables and foreign keys).
+- `V2`: Initial data (default Admin and courses).
+- `V5`: Performance indexes for fast searches.

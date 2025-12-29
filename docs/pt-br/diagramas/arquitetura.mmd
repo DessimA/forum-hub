@@ -1,0 +1,14 @@
+```mermaid
+graph LR
+    Client[Vue.js Frontend] <-->|REST API + JWT| API[Spring Boot Monolith]
+    
+    subgraph "Módulos Backend"
+        API --> Auth[Auth Module]
+        API --> Topic[Topic Module]
+        API --> UserM[User Module]
+        API --> AuditM[Audit Module]
+    end
+    
+    API <-->|JPA/Flyway| DB[(MySQL Database)]
+    API -.->|Actuator| Health[Health Checks]
+```

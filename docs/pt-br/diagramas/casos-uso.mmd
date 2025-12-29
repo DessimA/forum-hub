@@ -1,0 +1,27 @@
+```mermaid
+graph TD
+    User[Usuário]
+    Moderator[Moderador]
+    Admin[Administrador]
+    
+    subgraph "Ações de Conteúdo"
+        User -->|Criar/Ver| Topics[Tópicos]
+        User -->|Responder| Answers[Respostas]
+        User -->|Marcar| Solution[Solução]
+    end
+    
+    subgraph "Ações de Moderação"
+        Moderator -->|Excluir| Delete[Excluir Tópico/Resposta]
+        Moderator -->|Suspender| Block[Bloquear Usuário 24h]
+    end
+    
+    subgraph "Ações Administrativas"
+        Admin -->|Banir| Ban[Bloqueio Permanente]
+        Admin -->|Gerenciar| Roles[Alterar Perfis]
+        Admin -->|Auditar| Audit[Visualizar Logs]
+    end
+    
+    Delete -.->|Gera| Log[Log de Auditoria]
+    Block -.->|Gera| Log
+    Ban -.->|Gera| Log
+```

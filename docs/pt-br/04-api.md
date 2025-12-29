@@ -1,42 +1,24 @@
-# Referência Técnica da API
+# 04 - Documentação da API
 
-A API do FórumHub segue a especificação OpenAPI 3.0 e utiliza os padrões mais modernos de design REST.
+## 🔐 Segurança
+Todas as rotas (exceto login/cadastro) exigem um Token JWT no Header:
+`Authorization: Bearer <seu_token>`
 
-## Princípios de Design
-- **Substantivos no Plural:** `/topics`, `/users`, `/answers`.
-- **Versionamento na URL:** `/api/v1/...`
-- **Paginação Obrigatória:** Todas as listagens utilizam paginação via Spring Data para evitar sobrecarga de rede.
+## 📍 Endpoints Principais
 
-## Detalhamento de Endpoints Críticos
+### Autenticação
+- `POST /api/v1/auth/login`: Retorna o token JWT.
+- `POST /api/v1/auth/register`: Cadastro de novos usuários.
 
-### 1. Gestão de Tópicos
-- **DELETE `/api/v1/topics/{id}`**
-  - **Permissões:** Autor do tópico, Moderador ou Admin.
-  - **Requisito:** É obrigatório passar o parâmetro `justification` na query string. Esta justificativa é salva no log de auditoria.
-  - **Efeito:** Deleção em cascata de todas as respostas associadas.
+### Tópicos
+- `GET /api/v1/topics`: Lista com paginação.
+- `POST /api/v1/topics`: Criação (Requer ROLE_USER).
+- `DELETE /api/v1/topics/{id}`: Exclusão (Requer justificativa se não for o autor).
 
-### 2. Gestão de Usuários (Moderação)
-- **POST `/api/v1/users/{id}/block`**
-  - **Moderador:** Pode suspender usuários por no máximo 24 horas.
-  - **Admin:** Pode aplicar suspensões permanentes.
-  - **Validação:** Um usuário não pode bloquear a si mesmo.
+### Usuários e Moderação
+- `POST /api/v1/users/{id}/block`: Bloqueio de usuário (Admin/Moderator).
+- `PATCH /api/v1/users/{id}/role`: Alteração de perfil (Admin).
 
-### 3. Sistema de Auditoria
-- **GET `/api/v1/audit-logs`**
-  - **Apenas Admin.**
-  - **Conteúdo:** Retorna uma lista detalhada de quem realizou ações destrutivas ou administrativas no sistema, permitindo total rastreabilidade.
-
-## Tratamento de Erros (Respostas Padrão)
-Todas as falhas retornam o seguinte objeto JSON:
-```json
-{
-  "timestamp": "2025-12-29T10:00:00",
-  "status": 403,
-  "error": "Forbidden",
-  "message": "Acesso negado: você não tem permissão para realizar esta ação.",
-  "path": "/api/v1/users/5/block"
-}
-```
-
-## Documentação Interativa
-O Swagger UI (`/swagger-ui.html`) permite que você teste os tokens JWT diretamente no navegador através da opção "Authorize" no canto superior direito.
+## 📖 Swagger (OpenAPI)
+A documentação interativa completa (onde você pode testar os endpoints) está disponível em:
+`http://localhost:8080/swagger-ui.html`

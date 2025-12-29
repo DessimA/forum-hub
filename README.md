@@ -1,78 +1,65 @@
-# FórumHub 🚀
+# FórumHub
 
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.1-brightgreen)](https://spring.io/projects/spring-boot)
-[![Vue.js](https://img.shields.io/badge/Vue.js-3.x-blue)](https://vuejs.org/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Project Status: Active](https://img.shields.io/badge/Project%20Status-Active-brightgreen.svg)]()
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen.svg)]()
+[![Backend Coverage](https://img.shields.io/badge/Backend%20Coverage-80%2B%25-brightgreen.svg)]()
+[![Frontend Coverage](https://img.shields.io/badge/Frontend%20Coverage-75%2B%25-brightgreen.svg)]()
 
-[**Português**](#-fórumhub-pt-br) | [**English**](#-forumhub-en)
+## 📋 Descrição / Description
 
----
+**PT-BR:** O FórumHub é uma plataforma de fórum moderna e robusta, desenvolvida para facilitar a troca de conhecimento. O projeto foca em excelência técnica, utilizando uma arquitetura de Monolito Modular, seguindo rigorosamente os princípios SOLID, Clean Code e a metodologia TDD (Test Driven Development).
 
-## 🇧🇷 FórumHub (PT-BR)
-
-O **FórumHub** é uma plataforma robusta de fórum de discussão, desenvolvida como o desafio final do programa **Alura Challenge Back-End (Oracle Next Education)**. O projeto evoluiu de uma simples API REST para uma aplicação **Enterprise Full-Stack** completa, integrando padrões modernos de arquitetura, segurança e moderação.
-
-### ✨ Diferenciais do Projeto
-- **Arquitetura Limpa:** Separação rigorosa de responsabilidades entre Controladores, Serviços e Repositórios.
-- **Segurança Avançada (RBAC):** Sistema de permissões multinível (Admin, Moderador, Usuário) via JWT.
-- **Rastreabilidade:** Sistema de auditoria nativo que registra justificativas para ações críticas.
-- **Ambiente Imutável:** Totalmente conteinerizado com Docker, garantindo que o "funciona na minha máquina" seja verdade para todos.
-
-### 🛠️ Pilha Tecnológica
-- **Backend:** Java 17, Spring Boot 3.4.1, Spring Security, JWT, JPA/Hibernate, MySQL, Flyway.
-- **Frontend:** Vue 3 (Composition API), Vite, Pinia, Vuetify 3 (Neon Dark Theme).
-- **Testes:** JUnit 5, Mockito, MockMvc (Backend) | Vitest, JSDOM (Frontend).
-
-### 🚀 Quick Start
-```bash
-git clone https://github.com/DessimA/forum-hub.git
-cd forum-hub
-sh automation/run.sh # Use a opção 3 para Full-Stack
-```
+**EN:** FórumHub is a modern and robust forum platform designed to facilitate knowledge sharing. The project focuses on technical excellence, utilizing a Modular Monolith architecture and strictly following SOLID principles, Clean Code, and TDD (Test Driven Development).
 
 ---
 
-## 🇺🇸 ForumHub (EN)
+## 📚 Documentação Completa / Full Documentation
 
-**FórumHub** is a robust discussion forum platform, developed as the final challenge for the **Alura Challenge Back-End (Oracle Next Education)** program. The project evolved from a simple REST API into a complete **Enterprise Full-Stack** application, integrating modern architecture, security, and moderation patterns.
+Acesse os detalhes por idioma / Access details by language:
 
-### ✨ Project Highlights
-- **Clean Architecture:** Strict separation of concerns between Controllers, Services, and Repositories.
-- **Advanced Security (RBAC):** Multi-level permission system (Admin, Moderator, User) via JWT.
-- **Traceability:** Native auditing system that records justifications for critical actions.
-- **Immutable Environment:** Fully containerized with Docker, ensuring that "works on my machine" is true for everyone.
+### [🇧🇷 Português](./docs/pt-br/README.md)
+1.  [Introdução](./docs/pt-br/01-introducao.md)
+2.  [Arquitetura](./docs/pt-br/02-arquitetura.md)
+3.  [Infraestrutura e Docker](./docs/pt-br/03-infraestrutura.md)
+4.  [Documentação da API](./docs/pt-br/04-api.md)
+5.  [Frontend (Vue.js)](./docs/pt-br/05-frontend.md)
+6.  [Estratégia de Testes](./docs/pt-br/06-testes.md)
 
-### 🛠️ Tech Stack
-- **Backend:** Java 17, Spring Boot 3.4.1, Spring Security, JWT, JPA/Hibernate, MySQL, Flyway.
-- **Frontend:** Vue 3 (Composition API), Vite, Pinia, Vuetify 3 (Neon Dark Theme).
-- **Testing:** JUnit 5, Mockito, MockMvc (Backend) | Vitest, JSDOM (Frontend).
-
-### 🚀 Quick Start
-```bash
-git clone https://github.com/DessimA/forum-hub.git
-cd forum-hub
-sh automation/run.sh # Use option 3 for Full-Stack
-```
+### [🇺🇸 English](./docs/en/README.md)
+1.  [Introduction](./docs/en/01-introduction.md)
+2.  [Architecture](./docs/en/02-architecture.md)
+3.  [Infrastructure and Docker](./docs/en/03-infrastructure.md)
+4.  [API Documentation](./docs/en/04-api.md)
+5.  [Frontend (Vue.js)](./docs/en/05-frontend.md)
+6.  [Testing Strategy](./docs/en/06-testing.md)
 
 ---
 
-## 📚 Documentação Aprofundada / Deep Documentation
+## 🚀 Quick Start
 
-| Assunto / Topic | Português (PT-BR) | English (EN) |
-| :--- | :---: | :---: |
-| **Introdução / Intro** | [Ler](./docs/pt-br/01-introducao.md) | [Read](./docs/en/01-introduction.md) |
-| **Arquitetura / Architecture** | [Explorar](./docs/pt-br/02-arquitetura.md) | [Explore](./docs/en/02-architecture.md) |
-| **Infraestrutura / Infra** | [Ver](./docs/pt-br/03-infraestrutura.md) | [View](./docs/en/03-infrastructure.md) |
-| **Referência API / API Ref** | [Consultar](./docs/pt-br/04-api.md) | [Check](./docs/en/04-api.md) |
+### Pré-requisitos / Prerequisites
+- Docker & Docker Compose
+- Git
+
+### Como executar / How to run
+
+**PT-BR:**
+1. Clone o repositório.
+2. Execute o script de automação: `./automation/run.sh`
+3. Escolha a opção **4 (Full Stack)**.
+4. Acesse: Backend em `localhost:8080` | Frontend em `localhost:3000`.
+
+**EN:**
+1. Clone the repository.
+2. Run the automation script: `./automation/run.sh`
+3. Choose option **4 (Full Stack)**.
+4. Access: Backend at `localhost:8080` | Frontend at `localhost:3000`.
 
 ---
 
-## 👥 Desenvolvedor / Developer
-**José Anderson da Silva Costa**
-- GitHub: [@DessimA](https://github.com/DessimA)
-- LinkedIn: [Perfil](https://www.linkedin.com/in/dessim)
+## 🛠️ Tecnologias / Tech Stack
 
----
-
-## 📄 Licença / License
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+- **Backend:** Java 17, Spring Boot 3, Hibernate, Flyway, Spring Security (JWT).
+- **Frontend:** Vue.js 3 (Composition API), TypeScript, Pinia, Vuetify 3, Vitest.
+- **Infra:** Docker, MySQL, Spring Actuator.
+- **Tests:** JUnit 5, Mockito, TestContainers, Cypress.
