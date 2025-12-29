@@ -19,9 +19,10 @@ const form = ref({
 const fetchCourses = async () => {
   try {
     const response = await api.get('/courses')
-    courses.value = response.data
+    courses.value = response?.data || []
   } catch (error) {
     console.error('Error fetching courses', error)
+    courses.value = []
   }
 }
 

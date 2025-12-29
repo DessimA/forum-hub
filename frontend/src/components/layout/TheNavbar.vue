@@ -4,7 +4,9 @@ import { useRouter } from 'vue-router'
 
 const authStore = useAuthStore()
 const router = useRouter()
-const emit = defineEmits(['open-new-topic'])
+const emit = defineEmits<{
+  (e: 'open-new-topic'): void
+}>()
 
 const handleLogout = () => {
   authStore.logout()

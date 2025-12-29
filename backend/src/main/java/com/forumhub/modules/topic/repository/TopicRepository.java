@@ -9,4 +9,6 @@ import org.springframework.lang.NonNull;
 public interface TopicRepository extends JpaRepository<Topic, Long> {
     @NonNull
     Page<Topic> findAll(@NonNull Pageable pageable);
+    
+    boolean existsByTitleAndMessage(String title, String message);
 }
