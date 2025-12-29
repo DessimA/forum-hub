@@ -1,0 +1,21 @@
+services:
+  backend-test:
+    build:
+      context: ..
+      dockerfile: infra/backend/Dockerfile
+      target: build
+    container_name: forumhub-backend-test
+    environment:
+      - SPRING_PROFILES_ACTIVE=test
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+    networks:
+      - forumhub-network
+
+  frontend-test:
+    build:
+      context: ..
+      dockerfile: infra/frontend/Dockerfile
+      target: build
+    container_name: forumhub-frontend-test
+    networks:
+      - forumhub-network
