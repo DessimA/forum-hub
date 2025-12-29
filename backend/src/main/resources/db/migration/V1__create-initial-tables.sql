@@ -31,8 +31,7 @@ CREATE TABLE topics (
     course_id BIGINT NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_topic_author FOREIGN KEY (author_id) REFERENCES users(id),
-    CONSTRAINT fk_topic_course FOREIGN KEY (course_id) REFERENCES courses(id),
-    UNIQUE(title, message)
+    CONSTRAINT fk_topic_course FOREIGN KEY (course_id) REFERENCES courses(id)
 );
 
 CREATE TABLE answers (

@@ -25,6 +25,7 @@ services:
       dockerfile: infra/backend/Dockerfile
     container_name: forumhub-backend
     restart: always
+    profiles: ["prod", "full", "dev"]
     ports:
       - "8080:8080"
     environment:
@@ -37,6 +38,12 @@ services:
         condition: service_healthy
     networks:
       - forumhub-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8080/actuator/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
 
   frontend:
     build:
@@ -44,10 +51,12 @@ services:
       dockerfile: infra/frontend/Dockerfile
     container_name: forumhub-frontend
     restart: always
+    profiles: ["prod", "full", "dev"]
     ports:
       - "80:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     networks:
       - forumhub-network
 
