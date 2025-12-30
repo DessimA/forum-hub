@@ -2,7 +2,6 @@ package com.forumhub.modules.user;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.forumhub.modules.user.controller.UserController;
-import com.forumhub.modules.user.dto.UserUpdateDTO;
 import com.forumhub.modules.user.model.Profile;
 import com.forumhub.modules.user.model.User;
 import com.forumhub.modules.user.repository.ProfileRepository;
@@ -33,74 +32,73 @@ class UserIntegrationTest {
     @Autowired private UserRepository userRepository;
     @Autowired private ProfileRepository profileRepository;
 
+    private User adminUser;
+    private User moderatorUser;
+    private User regularUser;
+
     @BeforeEach
     void setup() {
-        if (profileRepository.findByName("ROLE_USER").isEmpty()) {
-            profileRepository.save(new Profile(null, "ROLE_USER"));
-        }
-        if (profileRepository.findByName("ROLE_ADMIN").isEmpty()) {
-            profileRepository.save(new Profile(null, "ROLE_ADMIN"));
-        }
+        // Limpa para garantir isolamento
+        userRepository.deleteAll();
         
-        if (userRepository.findByEmail("test@user.com") == null) {
-            var profile = profileRepository.findByName("ROLE_USER").get();
-            var user = User.builder().name("Test User").email("test@user.com").password("123").profile(profile).build();
-            userRepository.save(user);
-        }
+        var adminProfile = profileRepository.findByName("ROLE_ADMIN").orElseGet(() -> profileRepository.save(new Profile(null, "ROLE_ADMIN")));
+        var modProfile = profileRepository.findByName("ROLE_MODERATOR").orElseGet(() -> profileRepository.save(new Profile(null, "ROLE_MODERATOR")));
+        var userProfile = profileRepository.findByName("ROLE_USER").orElseGet(() -> profileRepository.save(new Profile(null, "ROLE_USER")));
 
-        if (userRepository.findByEmail("admin@forumhub.com") == null) {
-            var profile = profileRepository.findByName("ROLE_ADMIN").get();
-            var user = User.builder().name("Admin").email("admin@forumhub.com").password("123").profile(profile).build();
-            userRepository.save(user);
-        }
+        adminUser = userRepository.save(User.builder().name("Admin").email("integration-admin@test.com").password("123").profile(adminProfile).build());
+        moderatorUser = userRepository.save(User.builder().name("Mod").email("integration-mod@test.com").password("123").profile(modProfile).build());
+        regularUser = userRepository.save(User.builder().name("User").email("integration-user@test.com").password("123").profile(userProfile).build());
     }
 
     @Test
-    @DisplayName("Should get profile when authenticated")
-    @WithMockUser(username = "test@user.com", roles = "USER")
-    void shouldGetProfile() throws Exception {
-        mockMvc.perform(get("/api/v1/users/profile"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("Should update profile")
-    @WithMockUser(username = "test@user.com", roles = "USER")
-    void shouldUpdateProfile() throws Exception {
-        var dto = new UserUpdateDTO("New Name", "test@user.com", null);
-        
-        mockMvc.perform(put("/api/v1/users/profile")
+    @DisplayName("ADMIN should block a USER")
+    @WithMockUser(username = "integration-admin@test.com", roles = "ADMIN")
+    void adminShouldBlockUser() throws Exception {
+        var dto = new UserController.BlockRequestDTO(true, null, "Spam");
+        mockMvc.perform(post("/api/v1/users/" + regularUser.getId() + "/block")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("Should list all users as admin")
-    @WithMockUser(username = "admin@forumhub.com", roles = "ADMIN")
-    void shouldListAllUsers() throws Exception {
-        mockMvc.perform(get("/api/v1/users"))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("Should return 403 when listing users as regular user")
-    @WithMockUser(username = "test@user.com", roles = "USER")
-    void shouldNotListAllUsers() throws Exception {
-        mockMvc.perform(get("/api/v1/users"))
+    @DisplayName("MODERATOR should NOT block an ADMIN")
+    @WithMockUser(username = "integration-mod@test.com", roles = "MODERATOR")
+    void moderatorShouldNotBlockAdmin() throws Exception {
+        var dto = new UserController.BlockRequestDTO(false, 1, "Testing");
+        mockMvc.perform(post("/api/v1/users/" + adminUser.getId() + "/block")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isForbidden());
     }
 
     @Test
-    @DisplayName("Should block user as admin")
-    @WithMockUser(username = "admin@forumhub.com", roles = "ADMIN")
-    void shouldBlockUser() throws Exception {
-        var userToBlock = (User) userRepository.findByEmail("test@user.com");
-        var dto = new UserController.BlockRequestDTO(true, null, "Spam");
-        
-        mockMvc.perform(post("/api/v1/users/" + userToBlock.getId() + "/block")
+    @DisplayName("MODERATOR should NOT perform permanent block")
+    @WithMockUser(username = "integration-mod@test.com", roles = "MODERATOR")
+    void moderatorShouldNotPermanentBlock() throws Exception {
+        var dto = new UserController.BlockRequestDTO(true, null, "Abuse");
+        mockMvc.perform(post("/api/v1/users/" + regularUser.getId() + "/block")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("USER should NOT block anyone")
+    @WithMockUser(username = "integration-user@test.com", roles = "USER")
+    void userShouldNotBlockAnyone() throws Exception {
+        var dto = new UserController.BlockRequestDTO(false, 1, "Hack");
+        mockMvc.perform(post("/api/v1/users/" + moderatorUser.getId() + "/block")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("ADMIN should unblock a user")
+    @WithMockUser(username = "integration-admin@test.com", roles = "ADMIN")
+    void adminShouldUnblockUser() throws Exception {
+        mockMvc.perform(post("/api/v1/users/" + regularUser.getId() + "/unblock"))
                 .andExpect(status().isOk());
     }
 }

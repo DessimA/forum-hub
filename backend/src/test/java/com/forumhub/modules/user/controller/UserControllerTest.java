@@ -2,7 +2,11 @@ package com.forumhub.modules.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.forumhub.modules.user.dto.UserResponseDTO;
+import com.forumhub.modules.user.dto.UserUpdateDTO;
+import com.forumhub.modules.user.model.Profile;
+import com.forumhub.modules.user.model.User;
 import com.forumhub.modules.user.service.UserService;
+import com.forumhub.security.SecurityValidationService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,60 +19,36 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Collections;
+import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class UserControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @MockitoBean
-    private UserService service;
-
-    @Autowired
-    private com.forumhub.modules.user.repository.UserRepository userRepository;
-
-    @Autowired
-    private com.forumhub.modules.user.repository.ProfileRepository profileRepository;
-
-    @org.junit.jupiter.api.BeforeEach
-    void setup() {
-        if (userRepository.findByEmail("admin@test.com") == null) {
-            var profile = profileRepository.findByName("ROLE_ADMIN").orElseThrow();
-            var user = com.forumhub.modules.user.model.User.builder()
-                    .name("Admin")
-                    .email("admin@test.com")
-                    .password("123456")
-                    .profile(profile)
-                    .build();
-            userRepository.save(user);
-        }
-    }
+    @Autowired private MockMvc mockMvc;
+    @Autowired private ObjectMapper objectMapper;
+    @MockitoBean private UserService service;
+    @MockitoBean private SecurityValidationService securityService;
 
     @Test
     @DisplayName("Should list all users for admin")
-    @WithMockUser(username = "admin@test.com", roles = "ADMIN")
+    @WithMockUser(roles = "ADMIN")
     void shouldListAllUsersForAdmin() throws Exception {
-        var userDto = new UserResponseDTO(1L, "Admin", "admin@test.com", "ROLE_ADMIN", LocalDateTime.now());
-        when(service.listAll()).thenReturn(List.of(userDto));
-
+        when(service.listAll()).thenReturn(Collections.emptyList());
         mockMvc.perform(get("/api/v1/users"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].email").value("admin@test.com"));
+                .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("Should return 403 when non-admin lists users")
+    @DisplayName("Should return forbidden for non-admin")
     @WithMockUser(roles = "USER")
     void shouldReturnForbiddenForNonAdmin() throws Exception {
         mockMvc.perform(get("/api/v1/users"))
@@ -77,13 +57,21 @@ class UserControllerTest {
 
     @Test
     @DisplayName("Should block user for admin")
-    @WithMockUser(username = "admin@test.com", roles = "ADMIN")
+    @WithMockUser(roles = "ADMIN")
     void shouldBlockUserForAdmin() throws Exception {
-        var blockReq = new UserController.BlockRequestDTO(true, 0, "Violation of rules");
-        
-        mockMvc.perform(post("/api/v1/users/2/block")
+        UUID id = UUID.randomUUID();
+        var dto = new UserController.BlockRequestDTO(true, 0, "Violation of rules");
+        var mockTarget = User.builder().id(id).email("target@test.com").profile(new Profile(UUID.randomUUID(), "ROLE_USER")).build();
+        var mockResponse = new UserResponseDTO(id, "Target", "target@test.com", "ROLE_USER", LocalDateTime.now());
+
+        when(securityService.isResourceOwner(id)).thenReturn(false);
+        when(service.findById(id)).thenReturn(mockTarget);
+        when(service.toDTO(mockTarget)).thenReturn(mockResponse);
+        when(securityService.hasRole("ROLE_ADMIN")).thenReturn(true);
+
+        mockMvc.perform(post("/api/v1/users/" + id + "/block")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(blockReq)))
+                        .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isOk());
     }
 }

@@ -7,30 +7,32 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 class TokenServiceTest {
 
-    private TokenService tokenService;
+    private TokenService service;
 
     @BeforeEach
-    void setup() {
-        tokenService = new TokenService();
-        ReflectionTestUtils.setField(tokenService, "secret", "test-secret-123456789");
+    void setUp() {
+        service = new TokenService();
+        ReflectionTestUtils.setField(service, "secret", "test_secret");
     }
 
     @Test
-    @DisplayName("Should generate a valid token for a user")
-    void shouldGenerateValidToken() {
+    @DisplayName("Should generate a valid token")
+    void shouldGenerateToken() {
         User user = User.builder()
-                .id(1L)
-                .email("test@forumhub.com")
-                .profile(new Profile(1L, "ROLE_USER"))
+                .id(UUID.randomUUID())
+                .email("user@test.com")
+                .profile(new Profile(UUID.randomUUID(), "ROLE_USER"))
                 .build();
 
-        String token = tokenService.generateToken(user);
+        String token = service.generateToken(user);
 
         assertThat(token).isNotBlank();
-        assertThat(tokenService.getSubject(token)).isEqualTo("test@forumhub.com");
+        assertThat(service.getSubject(token)).isEqualTo("user@test.com");
     }
 }
