@@ -1,8 +1,16 @@
 export interface LoginRequest {
   email: string
-  senha: string
+  password: string
 }
 
 export interface AuthResponse {
   token: string
+}
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  profile: string
+  createdAt: string
 }

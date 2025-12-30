@@ -7,14 +7,14 @@ const router = useRouter()
 const authStore = useAuthStore()
 
 const email = ref('')
-const senha = ref('')
+const password = ref('')
 const error = ref('')
 const showPassword = ref(false)
 
 const handleLogin = async () => {
   try {
     error.value = ''
-    await authStore.login({ email: email.value, senha: senha.value })
+    await authStore.login({ email: email.value, password: password.value })
     router.push('/')
   } catch (e: any) {
     error.value = 'E-mail ou senha inválidos'
@@ -26,17 +26,17 @@ const handleLogin = async () => {
   <v-container fluid class="fill-height login-bg">
     <v-row align="center" justify="center">
       <v-col cols="12" sm="8" md="4">
-        <v-card class="pa-8 neon-border" color="surface" elevation="24">
+        <v-card class="pa-8 soft-border" color="surface" elevation="12">
           <div class="text-center mb-8">
-            <h1 class="text-h3 font-weight-bold neon-text">FórumHub</h1>
-            <p class="text-subtitle-1 text-grey-lighten-1">Conectando mentes na velocidade da luz</p>
+            <h1 class="text-h3 font-weight-bold text-white mb-2">Fórum<span class="text-primary">Hub</span></h1>
+            <p class="text-subtitle-1 text-grey-lighten-1">Onde o conhecimento se encontra</p>
           </div>
 
           <v-form @submit.prevent="handleLogin">
             <v-text-field
               v-model="email"
               label="E-mail"
-              prepend-inner-icon="mdi-email"
+              prepend-inner-icon="mdi-email-outline"
               variant="outlined"
               color="primary"
               class="mb-4"
@@ -44,9 +44,9 @@ const handleLogin = async () => {
             ></v-text-field>
 
             <v-text-field
-              v-model="senha"
+              v-model="password"
               label="Senha"
-              prepend-inner-icon="mdi-lock"
+              prepend-inner-icon="mdi-lock-outline"
               :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
               :type="showPassword ? 'text' : 'password'"
               variant="outlined"
@@ -65,8 +65,9 @@ const handleLogin = async () => {
               color="primary"
               block
               size="large"
+              variant="flat"
               :loading="authStore.loading"
-              class="neon-button"
+              class="font-weight-bold"
             >
               Entrar
             </v-btn>
@@ -74,7 +75,7 @@ const handleLogin = async () => {
 
           <div class="text-center mt-8">
             <span class="text-grey">Não tem uma conta?</span>
-            <v-btn variant="text" color="secondary" class="ml-2" @click="router.push('/register')">Registre-se</v-btn>
+            <v-btn variant="text" color="primary" class="ml-2" @click="router.push('/register')">Registre-se</v-btn>
           </div>
         </v-card>
       </v-col>
@@ -84,29 +85,15 @@ const handleLogin = async () => {
 
 <style scoped>
 .login-bg {
-  background: transparent;
+  background: transparent !important;
 }
 
-.neon-border {
-  border: 1px solid #00f0ff !important;
-  box-shadow: 0 0 20px rgba(0, 240, 255, 0.2) !important;
+.soft-border {
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-top: 2px solid #00f0ff !important; /* Neon usado como guia/destaque sutil */
 }
 
-.neon-text {
-  color: #00f0ff;
-  text-shadow: 0 0 10px rgba(0, 240, 255, 0.5);
-}
-
-.neon-button {
-  background-color: transparent !important;
-  border: 1px solid #00f0ff !important;
+.text-primary {
   color: #00f0ff !important;
-  transition: all 0.3s ease;
-}
-
-.neon-button:hover {
-  background-color: #00f0ff !important;
-  color: #0a0e27 !important;
-  box-shadow: 0 0 15px #00f0ff;
 }
 </style>
