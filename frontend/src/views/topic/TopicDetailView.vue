@@ -2,7 +2,6 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
-import TheNavbar from '@/components/layout/TheNavbar.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const authStore = useAuthStore()
@@ -48,9 +47,6 @@ const handleDelete = async () => {
   }
   
   try {
-    // Ajustar o backend para receber justificativa via @RequestParam ou Body se necessário
-    // Por simplicidade aqui vou passar no body se for DELETE? Não, DELETE costuma não ter body.
-    // Vou usar @RequestParam no backend para isso.
     await api.delete(`/topics/${topic.value.id}?justification=${encodeURIComponent(justification)}`)
     router.push('/')
   } catch (error) {
@@ -134,107 +130,110 @@ onMounted(fetchTopic)
 </script>
 
 <template>
-  <v-layout>
-    <TheNavbar />
-    <v-main>
-      <v-container v-if="!loading && topic" class="py-10">
-        <v-card color="surface" class="pa-6 mb-8 border-neon">
-          <div class="d-flex justify-space-between mb-4">
-            <v-chip color="secondary" size="small">{{ topic.course }}</v-chip>
-            <v-chip :color="topic.status === 'RESOLVED' ? 'success' : 'primary'" variant="flat" size="small" class="font-weight-bold">
-              {{ topic.status === 'RESOLVED' ? '✓ RESOLVIDO' : 'ABERTO' }}
-            </v-chip>
-          </div>
-          <h1 class="text-h3 font-weight-bold mb-4">{{ topic.title }}</h1>
-          <div class="d-flex align-center justify-space-between mb-6">
-            <div class="d-flex align-center text-grey">
-              <v-icon class="mr-2">mdi-account</v-icon> {{ topic.author }}
-              <v-icon class="ml-4 mr-2">mdi-clock-outline</v-icon> {{ new Date(topic.createdAt).toLocaleString() }}
-            </div>
-            <div class="d-flex gap-2" v-if="authStore.isAdmin || authStore.isModerator || topic.authorEmail === authStore.userEmail">
-              <v-btn v-if="authStore.isAdmin || topic.authorEmail === authStore.userEmail" icon="mdi-pencil" variant="text" color="primary" @click="showEditDialog = true"></v-btn>
-              <v-btn icon="mdi-delete" variant="text" color="error" @click="showDeleteDialog = true"></v-btn>
-              <v-btn v-if="(authStore.isAdmin || authStore.isModerator) && topic.authorEmail !== authStore.userEmail" icon="mdi-account-cancel" variant="text" color="warning" @click="blockUser(topic.authorId)"></v-btn>
-            </div>
-          </div>
-          <v-divider class="mb-6"></v-divider>
-          <div class="text-body-1 white-space-pre">{{ topic.message }}</div>
-        </v-card>
+  <v-container v-if="!loading && topic" class="py-10">
+    <v-card color="surface" class="pa-6 mb-8 border-subtle">
+      <div class="d-flex justify-space-between mb-4">
+        <v-chip color="secondary" size="small" variant="tonal">{{ topic.course }}</v-chip>
+        <v-chip :color="topic.status === 'RESOLVED' ? 'success' : 'primary'" variant="tonal" size="small" class="font-weight-bold">
+          {{ topic.status === 'RESOLVED' ? '✓ RESOLVIDO' : 'ABERTO' }}
+        </v-chip>
+      </div>
+      <h1 class="text-h3 font-weight-bold mb-4 text-white">{{ topic.title }}</h1>
+      <div class="d-flex align-center justify-space-between mb-6">
+        <div class="d-flex align-center text-grey">
+          <v-icon class="mr-2">mdi-account-outline</v-icon> {{ topic.author }}
+          <v-icon class="ml-4 mr-2">mdi-clock-outline</v-icon> {{ new Date(topic.createdAt).toLocaleString() }}
+        </div>
+        <div class="d-flex gap-2" v-if="authStore.isAdmin || authStore.isModerator || topic.authorEmail === authStore.userEmail">
+          <v-btn v-if="authStore.isAdmin || topic.authorEmail === authStore.userEmail" icon="mdi-pencil" variant="text" color="primary" @click="showEditDialog = true"></v-btn>
+          <v-btn icon="mdi-delete" variant="text" color="error" @click="showDeleteDialog = true"></v-btn>
+          <v-btn v-if="(authStore.isAdmin || authStore.isModerator) && topic.authorEmail !== authStore.userEmail" icon="mdi-account-cancel" variant="text" color="warning" @click="blockUser(topic.authorId)"></v-btn>
+        </div>
+      </div>
+      <v-divider class="mb-6" style="opacity: 0.05"></v-divider>
+      <div class="text-body-1 white-space-pre text-grey-lighten-3">{{ topic.message }}</div>
+    </v-card>
 
-        <h2 class="text-h5 neon-text mb-6">Respostas ({{ topic.answers.length }})</h2>
-        
-        <v-card v-for="resp in topic.answers" :key="resp.id" class="mb-4 pa-4" :class="{'solucao-border': resp.solution}" color="surface">
-          <div class="d-flex justify-space-between align-center mb-2">
-            <div class="font-weight-bold text-primary">{{ resp.author }}</div>
-            <v-chip v-if="resp.solution" color="success" size="x-small" prepend-icon="mdi-check-decagram">SOLUÇÃO</v-chip>
-          </div>
-          <p class="mb-4">{{ resp.message }}</p>
-          <div class="d-flex justify-space-between align-center">
-            <span class="text-caption text-grey">{{ new Date(resp.createdAt).toLocaleString() }}</span>
-            <div class="d-flex gap-2">
-              <v-btn v-if="authStore.isAdmin || topic.authorEmail === authStore.userEmail" variant="text" size="small" :color="resp.solution ? 'warning' : 'success'" :prepend-icon="resp.solution ? 'mdi-close-circle' : 'mdi-check'" @click="toggleSolution(resp.id)">
-                {{ resp.solution ? 'Desmarcar Solução' : 'Marcar como Solução' }}
-              </v-btn>
-              <v-btn 
-                v-if="authStore.isAdmin || authStore.isModerator || resp.authorEmail === authStore.userEmail"
-                icon="mdi-delete-outline" 
-                variant="text" 
-                size="small" 
-                color="grey" 
-                @click="deleteAnswer(resp.id, resp.authorEmail)"
-              ></v-btn>
-              <v-btn 
-                v-if="authStore.isAdmin && resp.authorEmail !== authStore.userEmail"
-                icon="mdi-account-cancel-outline" 
-                variant="text" 
-                size="small" 
-                color="warning" 
-                @click="blockUser(resp.authorId)"
-              ></v-btn>
-            </div>
-          </div>
-        </v-card>
+    <h2 class="text-h5 text-white mb-6">Respostas ({{ topic.answers.length }})</h2>
+    
+    <v-card v-for="resp in topic.answers" :key="resp.id" class="mb-4 pa-4 card-soft" :class="{'solucao-border': resp.solution}" color="surface" variant="flat">
+      <div class="d-flex justify-space-between align-center mb-2">
+        <div class="font-weight-bold text-primary">{{ resp.author }}</div>
+        <v-chip v-if="resp.solution" color="success" size="x-small" variant="flat" prepend-icon="mdi-check-decagram">SOLUÇÃO</v-chip>
+      </div>
+      <p class="mb-4 text-grey-lighten-2">{{ resp.message }}</p>
+      <div class="d-flex justify-space-between align-center">
+        <span class="text-caption text-grey">{{ new Date(resp.createdAt).toLocaleString() }}</span>
+        <div class="d-flex gap-2">
+          <v-btn v-if="authStore.isAdmin || topic.authorEmail === authStore.userEmail" variant="text" size="small" :color="resp.solution ? 'warning' : 'success'" :prepend-icon="resp.solution ? 'mdi-close-circle' : 'mdi-check'" @click="toggleSolution(resp.id)">
+            {{ resp.solution ? 'Desmarcar Solução' : 'Marcar como Solução' }}
+          </v-btn>
+          <v-btn 
+            v-if="authStore.isAdmin || authStore.isModerator || resp.authorEmail === authStore.userEmail"
+            icon="mdi-delete-outline" 
+            variant="text" 
+            size="small" 
+            color="grey" 
+            @click="deleteAnswer(resp.id, resp.authorEmail)"
+          ></v-btn>
+                        <v-btn 
+                          v-if="(authStore.isAdmin || authStore.isModerator) && resp.authorEmail !== authStore.userEmail"
+                          icon="mdi-account-cancel-outline" 
+                          variant="text" 
+                          size="small" 
+                          color="warning" 
+                          @click="blockUser(resp.authorId)"
+                        ></v-btn>
+          
+        </div>
+      </div>
+    </v-card>
 
-        <v-card color="surface" class="pa-6 mt-10">
-          <h3 class="text-h6 mb-4">Sua Resposta</h3>
-          <v-textarea v-model="newAnswer" placeholder="Escreva sua contribuição..." variant="outlined" color="primary" rows="4"></v-textarea>
-          <v-btn color="primary" class="mt-2" :loading="sending" @click="sendAnswer">Responder</v-btn>
-        </v-card>
+    <v-card color="surface" class="pa-6 mt-10 border-subtle" variant="flat">
+      <h3 class="text-h6 mb-4 text-white">Sua Resposta</h3>
+      <v-textarea v-model="newAnswer" placeholder="Escreva sua contribuição..." variant="outlined" color="primary" rows="4"></v-textarea>
+      <v-btn color="primary" variant="flat" class="mt-2 font-weight-bold" :loading="sending" @click="sendAnswer">Responder</v-btn>
+    </v-card>
 
-        <v-dialog v-model="showEditDialog" max-width="600px">
-          <v-card color="surface" class="pa-4 border-neon">
-            <v-card-title>Editar Tópico</v-card-title>
-            <v-card-text>
-              <v-text-field v-model="editForm.title" label="Título" variant="outlined"></v-text-field>
-              <v-textarea v-model="editForm.message" label="Mensagem" variant="outlined" rows="5"></v-textarea>
-            </v-card-text>
-            <v-card-actions>
-              <v-spacer></v-spacer>
-              <v-btn variant="text" @click="showEditDialog = false">Cancelar</v-btn>
-              <v-btn color="primary" variant="tonal" @click="handleUpdate">Salvar Alterações</v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
+    <v-dialog v-model="showEditDialog" max-width="600px">
+      <v-card color="surface" class="pa-4 border-subtle">
+        <v-card-title class="text-white">Editar Tópico</v-card-title>
+        <v-card-text>
+          <v-text-field v-model="editForm.title" label="Título" variant="outlined" color="primary"></v-text-field>
+          <v-textarea v-model="editForm.message" label="Mensagem" variant="outlined" color="primary" rows="5"></v-textarea>
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" color="grey" @click="showEditDialog = false">Cancelar</v-btn>
+          <v-btn color="primary" variant="flat" @click="handleUpdate">Salvar Alterações</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
-        <v-dialog v-model="showDeleteDialog" max-width="400px">
-          <v-card color="surface" class="pa-4 border-neon">
-            <v-card-title class="text-error">Excluir Tópico?</v-card-title>
-            <v-card-text>Esta ação não pode ser desfeita.</v-card-text>
-            <v-card-actions>
-              <v-spacer></v-spacer>
-              <v-btn variant="text" @click="showDeleteDialog = false">Cancelar</v-btn>
-              <v-btn color="error" variant="flat" @click="handleDelete">Sim, Excluir</v-btn>
-            </v-card-actions>
-          </v-card>
-        </v-dialog>
-      </v-container>
-    </v-main>
-  </v-layout>
+    <v-dialog v-model="showDeleteDialog" max-width="400px">
+      <v-card color="surface" class="pa-4 border-subtle">
+        <v-card-title class="text-error font-weight-bold">Excluir Tópico?</v-card-title>
+        <v-card-text class="text-grey-lighten-1">Esta ação não pode ser desfeita.</v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn variant="text" color="grey" @click="showDeleteDialog = false">Cancelar</v-btn>
+          <v-btn color="error" variant="flat" @click="handleDelete">Sim, Excluir</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </v-container>
 </template>
 
 <style scoped>
-.border-neon { border: 1px solid rgba(0, 240, 255, 0.3); }
-.solucao-border { border: 2px solid #4caf50 !important; }
-.neon-text { color: #00f0ff; text-shadow: 0 0 10px rgba(0, 240, 255, 0.3); }
+.border-subtle { 
+  border: 1px solid rgba(255, 255, 255, 0.05) !important; 
+}
+.card-soft {
+  border: 1px solid rgba(255, 255, 255, 0.03) !important;
+}
+.solucao-border { 
+  border: 1px solid rgba(76, 175, 80, 0.3) !important; 
+  background-color: rgba(76, 175, 80, 0.02) !important;
+}
 .white-space-pre { white-space: pre-wrap; }
 </style>

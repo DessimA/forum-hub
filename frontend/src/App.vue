@@ -1,50 +1,69 @@
+<script setup lang="ts">
+import TheNavbar from '@/components/layout/TheNavbar.vue'
+import { useAuthStore } from '@/stores/auth'
+import { useTopicStore } from '@/stores/topic'
+
+const authStore = useAuthStore()
+const topicStore = useTopicStore()
+
+const handleOpenNewTopic = () => {
+  topicStore.openDialog()
+}
+</script>
+
 <template>
-  <v-app>
-    <router-view />
+  <v-app class="app-container">
+    <TheNavbar v-if="authStore.isAuthenticated" @open-new-topic="handleOpenNewTopic" />
+    
+    <v-main class="main-content">
+      <router-view />
+    </v-main>
   </v-app>
 </template>
 
-<script setup lang="ts">
-</script>
-
 <style>
-body {
-  background-color: #0a0e27;
-  background-image: linear-gradient(rgba(10, 14, 39, 0.5), rgba(10, 14, 39, 0.5)), url('@/assets/background.jpg');
-  background-size: cover;
-  background-position: center;
-  background-attachment: fixed;
-  min-height: 100vh;
+/* Força a transparência no sistema de cores do Vuetify */
+:root {
+  --v-theme-background: transparent !important;
 }
 
-.v-application, .v-main {
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  /* Fundo aplicado no nível mais baixo, com gradiente menos opaco para dar visibilidade */
+  background: linear-gradient(rgba(10, 14, 39, 0.7), rgba(10, 14, 39, 0.7)), 
+              url('@/assets/background.jpg') no-repeat center center fixed !important;
+  background-size: cover !important;
+}
+
+/* Garante que todos os wrappers do Vuetify sejam transparentes */
+.v-application,
+.v-application__wrap,
+.main-content {
   background: transparent !important;
 }
 
-.v-card {
-  background-color: rgba(21, 27, 61, 0.8) !important;
-  backdrop-filter: blur(10px);
+.bg-background {
+  background-color: transparent !important;
 }
 
-.v-app-bar {
-  background-color: rgba(10, 14, 39, 0.8) !important;
-  backdrop-filter: blur(5px);
+.min-vh-100 {
+  min-height: 100vh;
 }
 
+/* Ajustes de scrollbar sutis */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #0a0e27;
+  background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #00f0ff;
+  background: rgba(0, 240, 255, 0.2);
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #00d9ff;
+  background: rgba(0, 240, 255, 0.4);
 }
 </style>

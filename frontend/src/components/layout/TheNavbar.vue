@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
+import { computed } from 'vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
+
 const emit = defineEmits<{
   (e: 'open-new-topic'): void
 }>()
+
+// O botão "Novo Tópico" deve aparecer apenas na listagem de tópicos (rota home '/')
+const isTopicListView = computed(() => route.path === '/')
 
 const handleLogout = () => {
   authStore.logout()
@@ -15,15 +21,15 @@ const handleLogout = () => {
 </script>
 
 <template>
-  <v-app-bar color="background" flat class="border-b-neon px-4">
+  <v-app-bar color="background" flat class="border-b-soft px-4">
     <v-app-bar-title class="font-weight-bold cursor-pointer" @click="router.push('/')">
-      <span class="neon-text">Fórum</span><span class="text-white">Hub</span>
+      <span class="logo-text">Fórum</span><span class="text-white">Hub</span>
     </v-app-bar-title>
 
     <v-spacer></v-spacer>
 
     <v-btn 
-      v-if="authStore.isAuthenticated"
+      v-if="authStore.isAuthenticated && isTopicListView"
       variant="text" 
       color="primary" 
       class="mr-2" 
@@ -35,13 +41,15 @@ const handleLogout = () => {
 
     <v-menu v-if="authStore.isAuthenticated">
       <template v-slot:activator="{ props }">
-        <v-avatar v-bind="props" color="surface" class="cursor-pointer border-neon" size="40">
+        <v-avatar v-bind="props" color="surface" class="cursor-pointer border-subtle" size="40">
           <v-icon color="primary">mdi-account</v-icon>
         </v-avatar>
       </template>
-      <v-list bg-color="surface">
-      <v-list-item v-if="authStore.isAdmin" prepend-icon="mdi-account-group" title="Gestão Usuários" to="/admin/users"></v-list-item>
-      <v-list-item v-if="authStore.isAdmin" prepend-icon="mdi-shield-check" title="Auditoria" to="/admin/logs"></v-list-item>
+      <v-list bg-color="surface" min-width="200">
+        <v-list-item v-if="authStore.isAdmin" prepend-icon="mdi-account-group" title="Gestão Usuários" to="/admin/users"></v-list-item>
+        <v-list-item v-if="authStore.isAdmin" prepend-icon="mdi-book-education" title="Gestão Cursos" to="/admin/courses"></v-list-item>
+        <v-list-item v-if="authStore.isAdmin" prepend-icon="mdi-shield-check" title="Auditoria" to="/admin/logs"></v-list-item>
+        <v-divider v-if="authStore.isAdmin"></v-divider>
         <v-list-item 
           prepend-icon="mdi-account-outline" 
           title="Meu Perfil" 
@@ -62,17 +70,17 @@ const handleLogout = () => {
 </template>
 
 <style scoped>
-.border-b-neon {
-  border-bottom: 1px solid rgba(0, 240, 255, 0.3) !important;
+.border-b-soft {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
 }
 
-.border-neon {
-  border: 1px solid #00f0ff;
+.border-subtle {
+  border: 1px solid rgba(0, 240, 255, 0.2);
 }
 
-.neon-text {
+.logo-text {
   color: #00f0ff;
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.5);
+  letter-spacing: 1px;
 }
 
 .cursor-pointer {
