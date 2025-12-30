@@ -5,29 +5,52 @@ import com.forumhub.modules.user.model.User;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "answers")
-@Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder @EqualsAndHashCode(of = "id")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class Answer {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @Id
+    private UUID id;
+
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String message;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "topic_id")
+    @JoinColumn(name = "topic_id", nullable = false)
     private Topic topic;
 
-    @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "author_id")
+    @JoinColumn(name = "author_id", nullable = false)
     private User author;
 
-    @Builder.Default
-    private Boolean solution = false;
+    private Boolean solution;
 
-    @Column(name = "updated_at", insertable = false, updatable = false)
-    private LocalDateTime updatedAt;
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
+    public String getMessage() { return message; }
+    public void setMessage(String message) { this.message = message; }
+    public Topic getTopic() { return topic; }
+    public void setTopic(Topic topic) { this.topic = topic; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+    public User getAuthor() { return author; }
+    public void setAuthor(User author) { this.author = author; }
+    public Boolean getSolution() { return solution; }
+    public void setSolution(Boolean solution) { this.solution = solution; }
+
+    @PrePersist
+    public void prePersist() {
+        if (id == null) id = UUID.randomUUID();
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (solution == null) solution = false;
+    }
 }

@@ -1,12 +1,15 @@
 package com.forumhub.modules.answer.dto;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 public record AnswerResponseDTO(
-    Long id,
+    UUID id,
     String message,
-    Long topicId,
-    java.time.LocalDateTime createdAt,
+    UUID topicId,
+    LocalDateTime createdAt,
     String author,
-    Long authorId,
+    UUID authorId,
     String authorEmail,
     Boolean solution
 ) {}
