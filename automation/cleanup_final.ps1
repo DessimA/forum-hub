@@ -20,4 +20,8 @@ Write-Host "Cleaning target directories..." -ForegroundColor Yellow
 if (Test-Path "backend/target") { Remove-Item "backend/target" -Recurse -Force }
 if (Test-Path "frontend/dist") { Remove-Item "frontend/dist" -Recurse -Force }
 
+Write-Host "Cleaning dependencies (node_modules)..." -ForegroundColor Yellow
+if (Test-Path "frontend/node_modules") { Remove-Item "frontend/node_modules" -Recurse -Force }
+if (Test-Path "frontend/package-lock.json") { Remove-Item "frontend/package-lock.json" -Force }
+
 Write-Host "Cleanup complete." -ForegroundColor Cyan

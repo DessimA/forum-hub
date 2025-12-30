@@ -9,6 +9,7 @@ NC='\033[0m'
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 COMPOSE_FILE="$PROJECT_ROOT/infra/docker-compose.yml"
+TEST_COMPOSE_FILE="$PROJECT_ROOT/infra/docker-compose.test.yml"
 CURRENT_PROFILE="dev"
 
 if docker compose version >/dev/null 2>&1; then
@@ -100,7 +101,7 @@ while true; do
     echo "3. Executar Frontend (inclui Backend e MySQL)"
     echo "4. Executar Ambos (Full Stack)"
     echo "5. Executar Testes Completos (Docker)"
-    echo "6. Parar e Remover Tudo"
+    echo "6. Parar e Remover Tudo (Limpeza Total)"
     echo "0. Sair"
     echo -n "Selecione a opção: "
     read target
@@ -112,8 +113,18 @@ while true; do
         4) select_mode "" ;; 
         5) "$SCRIPT_DIR/test.sh" ;;
         6) 
-            echo -e "${RED}Parando serviços e removendo containers...${NC}"
-            $DOCKER_CMD -f "$COMPOSE_FILE" down
+            echo -e "${RED}Parando TODOS os serviços e removendo recursos...${NC}"
+            
+            # 1. Tenta parar tudo via docker compose (incluindo testes e orfãos)
+            # Adiciona -v para remover volumes (limpeza completa de dados)
+            $DOCKER_CMD -f "$COMPOSE_FILE" -f "$TEST_COMPOSE_FILE" down -v --remove-orphans
+            
+            # 2. Força bruta: Remove containers pelo nome explícito caso o compose falhe em rastreá-los
+            # Isso garante que a rede seja liberada
+            echo -e "${YELLOW}Garantindo remoção de containers remanescentes...${NC}"
+            docker rm -f forumhub-backend forumhub-frontend forumhub-mysql forumhub-backend-test forumhub-frontend-test >/dev/null 2>&1
+            
+            echo -e "${GREEN}Limpeza concluída!${NC}"
             echo "Pressione qualquer tecla..."
             read -n 1
             ;; 
