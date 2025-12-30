@@ -1,20 +1,30 @@
 # 04 - API Documentation
 
-## 🔐 Security
-All routes (except login/register) require a JWT Token in the Header:
-`Authorization: Bearer <your_token>`
+## 🔐 Security and Authentication
+The API utilizes **Stateless Authentication** with **JWT** Tokens.
+- All routes under `/api/v1` (except `/auth/**` and `GET /courses`) require the `Authorization: Bearer <token>` header.
+- **Standardization:** All input and output fields use **English** names (`name`, `password`, `email`, `id`).
 
-## 📍 Key Endpoints
+## 📍 Featured Endpoints
 
-### Authentication
-- `POST /api/v1/auth/login`: Returns the JWT token.
-- `POST /api/v1/auth/register`: New user registration.
+### Authentication (`/api/v1/auth`)
+- `POST /login`: Authenticates and returns the JWT. Payload: `{ "email", "password" }`.
+- `POST /register`: Creates a new account with the `ROLE_USER` profile.
 
-### Topics
-- `GET /api/v1/topics`: Paginated list.
-- `POST /api/v1/topics`: Creation (Requires ROLE_USER).
-- `DELETE /api/v1/topics/{id}`: Deletion (Requires justification if not the author).
+### Topics (`/api/v1/topics`)
+- `GET /`: Paginated listing (`Page<TopicResponseDTO>`). Supported parameters: `page`, `size`, `sort`.
+- `POST /`: Topic creation. The author is automatically extracted from the security context.
+- `DELETE /{id}`: Logical deletion with audit log entry. Requires justification if performed by a moderator.
 
-## 📖 Swagger (OpenAPI)
-Full interactive documentation (where you can test the endpoints) is available at:
+### Courses (`/api/v1/courses`)
+- `GET /`: Now with **Mandatory Pagination** to ensure scalability.
+- `POST /`: Course registration (Restricted access: `ROLE_ADMIN`).
+
+### Users and Administration (`/api/v1/users`)
+- `GET /profile`: Logged-in user data.
+- `POST /{id}/block`: Support for **Permanent** or **Temporary** (days) block.
+- `POST /admin/logs/{id}/restore`: Unique system for restoring deleted entities.
+
+## 📖 Complete Documentation (Swagger)
+The API is fully documented with **SpringDoc / OpenAPI 3**. Access it to see all data schemas and error codes:
 `http://localhost:8080/swagger-ui.html`

@@ -1,26 +1,31 @@
 # 03 - Infraestrutura e Docker
 
 ## 🐳 Containerização
-O projeto é 100% containerizado para garantir que ele rode da mesma forma em qualquer computador. Utilizamos o `docker-compose` para orquestrar três serviços principais:
+O projeto é 100% containerizado para garantir paridade entre ambientes. Utilizamos o `docker-compose` para orquestrar os serviços principais:
 
 | Serviço | Imagem Base | Porta | Descrição |
 | :--- | :--- | :--- | :--- |
-| **MySQL** | `mysql:8.4` | 3306 | Banco de dados relacional. |
-| **Backend** | `eclipse-temurin:17` | 8080 | API Spring Boot. |
-| **Frontend** | `nginx:alpine` | 80/3000 | Aplicação Vue.js. |
+| **MySQL** | `mysql:8.4` | 3306 | Persistência de dados (Volumes em `./infra/mysql_data`). |
+| **Backend** | `eclipse-temurin:17` | 8080 | API Spring Boot (Multi-stage build). |
+| **Frontend** | `nginx:stable-alpine` | 80/3000 | SPA Vue.js servida por Nginx. |
 
-## ⚙️ Perfis de Execução (Profiles)
-O sistema suporta múltiplos perfis através do Docker Compose:
-- **prod:** Otimizado para performance, logs em nível WARN.
-- **dev:** Hot-reload ativado, logs em nível DEBUG.
-- **test:** Banco H2 em memória, limpeza automática de dados.
+## ⚙️ Scripts de Automação
+Facilitamos a execução através de scripts bash:
+- `./automation/run.sh`: Menu interativo para gerenciar perfis e serviços.
+- `./automation/test.sh`: Suite de testes completa (Backend + Frontend) via Docker.
 
-## 🗄️ Evolução do Banco (Flyway)
-Não criamos tabelas manualmente. O Flyway gerencia as migrações:
-- `V1`: Estrutura inicial (tabelas e chaves estrangeiras).
-- `V2`: Dados iniciais (Admin padrão e cursos).
-- `V5`: Índices de performance para buscas rápidas.
+### Perfis de Execução (Profiles)
+- **dev:** Ambiente de desenvolvimento com banco MySQL.
+- **test:** Ambiente isolado para testes usando H2 (MySQL Mode) e JUnit 5.
+- **prod:** Configuração otimizada para produção.
 
-## 💓 Monitoramento
-Utilizamos o **Spring Boot Actuator**. Você pode verificar a saúde do sistema em:
-`http://localhost:8080/actuator/health`
+## 🗄️ Gerenciamento de Banco (Flyway)
+O sistema utiliza Flyway para controle de versão do esquema. As migrações foram estabilizadas para serem compatíveis tanto com **MySQL 8.4** quanto com **H2 (em modo compatibilidade)**:
+- **V1:** Tabelas fundamentais com UUID (`BINARY(16)`).
+- **V2:** Carga inicial usando literais hexadecimais padrão (`X'...'`) para compatibilidade cruzada.
+- **V3/V4:** Extensões de moderacão e auditoria.
+- **V5:** Índices de performance (`idx_topics_author`, `idx_audit_entity`, etc).
+
+## 💓 Saúde e Monitoramento
+- **Actuator:** `http://localhost:8080/actuator/health` fornece o status em tempo real.
+- **Swagger UI:** `http://localhost:8080/swagger-ui.html` para testes interativos dos endpoints.

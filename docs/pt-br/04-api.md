@@ -1,24 +1,30 @@
 # 04 - Documentação da API
 
-## 🔐 Segurança
-Todas as rotas (exceto login/cadastro) exigem um Token JWT no Header:
-`Authorization: Bearer <seu_token>`
+## 🔐 Segurança e Autenticação
+A API utiliza **Stateless Authentication** com Tokens **JWT**. 
+- Todas as rotas sob `/api/v1` (exceto `/auth/**` e `GET /courses`) exigem o header `Authorization: Bearer <token>`.
+- **Padronização:** Todos os campos de entrada e saída utilizam nomes em **Inglês** (`name`, `password`, `email`, `id`).
 
-## 📍 Endpoints Principais
+## 📍 Endpoints em Destaque
 
-### Autenticação
-- `POST /api/v1/auth/login`: Retorna o token JWT.
-- `POST /api/v1/auth/register`: Cadastro de novos usuários.
+### Autenticação (`/api/v1/auth`)
+- `POST /login`: Autentica e retorna o JWT. Payload: `{ "email", "password" }`.
+- `POST /register`: Cria nova conta com perfil `ROLE_USER`.
 
-### Tópicos
-- `GET /api/v1/topics`: Lista com paginação.
-- `POST /api/v1/topics`: Criação (Requer ROLE_USER).
-- `DELETE /api/v1/topics/{id}`: Exclusão (Requer justificativa se não for o autor).
+### Tópicos (`/api/v1/topics`)
+- `GET /`: Listagem paginada (`Page<TopicResponseDTO>`). Parâmetros suportados: `page`, `size`, `sort`.
+- `POST /`: Criação de tópico. O autor é extraído automaticamente do contexto de segurança.
+- `DELETE /{id}`: Exclusão lógica com registro em auditoria. Exige justificativa se executado por moderador.
 
-### Usuários e Moderação
-- `POST /api/v1/users/{id}/block`: Bloqueio de usuário (Admin/Moderator).
-- `PATCH /api/v1/users/{id}/role`: Alteração de perfil (Admin).
+### Cursos (`/api/v1/courses`)
+- `GET /`: Agora com **Paginação Mandatória** para garantir escalabilidade.
+- `POST /`: Cadastro de curso (Acesso restrito: `ROLE_ADMIN`).
 
-## 📖 Swagger (OpenAPI)
-A documentação interativa completa (onde você pode testar os endpoints) está disponível em:
+### Usuários e Administração (`/api/v1/users`)
+- `GET /profile`: Dados do usuário logado.
+- `POST /{id}/block`: Suporte a bloqueio **Permanente** ou **Temporário** (dias).
+- `POST /admin/logs/{id}/restore`: Sistema único de restauração de entidades deletadas.
+
+## 📖 Documentação Completa (Swagger)
+A API é totalmente documentada com **SpringDoc / OpenAPI 3**. Acesse para ver todos os esquemas de dados e códigos de erro:
 `http://localhost:8080/swagger-ui.html`

@@ -1,7 +1,7 @@
 # 02 - System Architecture
 
 ## 🏗️ Modular Monolith
-The system utilizes a **Modular Monolith** architecture. This means that although everything is delivered in a single artifact, the code is organized into independent modules with well-defined responsibilities.
+The system utilizes a **Modular Monolith** architecture. This ensures isolation between domain business rules while maintaining deployment simplicity.
 
 ### Block Diagram
 ```mermaid
@@ -36,7 +36,18 @@ graph TD
     Audit --> DB
 ```
 
+## 🛡️ Architectural Decisions (ADRs)
+Key project decisions are documented in [ADRs](../decisions/):
+1. **ADR 001:** Modular Monolith choice.
+2. **ADR 002:** Stateless Authentication with JWT.
+3. **ADR 003:** Mandatory Auditing.
+4. **ADR 004:** **Immutable UUIDs:** Replacing sequential IDs with random UUIDs to prevent IDOR and ensure data restoration integrity.
+
+## 🆔 Entity Identification
+All entities use `java.util.UUID` as their primary key. In the database, they are stored as `BINARY(16)` for maximum performance. Foreign keys follow this pattern, ensuring that audit log references remain valid even after deletion and restoration.
+
 ## 📐 Design Principles
-- **SOLID:** Each class has a single responsibility. For example, we created `SecurityValidationService` specifically to handle authorization rules, removing this burden from the controllers.
-- **DRY (Don't Repeat Yourself):** Common validations were moved to utility services.
-- **Clean Code:** Method names reveal their intention (e.g., `markAsSolution` instead of `updateStatus`).
+- **SOLID:** Strict application. `SecurityValidationService` isolates security complexity, and `Mappers` (MapStruct) isolate data conversion.
+- **Repository Pattern:** Complete database abstraction via Spring Data JPA.
+- **Service Layer:** All business logic resides exclusively in services, never in controllers.
+- **Clean Code:** Self-explanatory method names in English, small functions, and highly testable code.

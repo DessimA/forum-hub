@@ -1,16 +1,25 @@
 # 06 - Testing Strategy
 
-## 🧪 TDD (Test Driven Development)
-In this project, no code was implemented without first having a test to validate its expected behavior.
+## 🧪 Methodology
+We adopt a rigorous **TDD (Test Driven Development)** approach. System stability is guaranteed by a suite covering everything from business rules to security.
 
-## 📊 Testing Levels
+## 📊 Implemented Testing Levels
 
-### Backend
-1. **Unit (JUnit + Mockito):** Tests business logic in isolation within Services.
-2. **Integration (H2):** Tests database communication and security filters.
-3. **E2E (TestContainers):** Tests the full flow using a real MySQL container.
+### Backend (Java)
+- **Unit:** Extensive coverage of `Services` and `Mappers` using **Mockito**.
+- **Integration:** Validation of complex flows using **H2 database in MySQL mode**.
+- **Security:** Specific tests to validate user blocking (`SuspendedUserTest`) and permission hierarchy.
+- **Auditing:** Data recovery tests ensure that UUID-based restoration logic works perfectly.
 
-### Frontend
-1. **Unit (Vitest):** Tests Stores and utility functions.
-2. **Component (Vue Test Utils):** Tests if components render and react to events correctly.
-3. **E2E (Cypress):** Simulates a real user navigating and interacting with the UI.
+### Frontend (Vue.js)
+- **Unit:** Pinia Store tests using **Vitest**.
+- **Component:** UI and event validation with **Vue Test Utils**.
+- **Typing:** Static verification via **TypeScript** integrated into the build process to prevent runtime errors.
+
+## 🚀 Automated Execution
+We use Docker to ensure tests run in an environment identical to production:
+`./automation/test.sh`
+
+## 📈 Quality Metrics
+- **Backend Coverage:** > 80% (focused on critical logic).
+- **Frontend Coverage:** > 75% (focused on store states and layout components).
