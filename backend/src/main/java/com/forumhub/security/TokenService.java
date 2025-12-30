@@ -7,12 +7,14 @@ import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.forumhub.modules.user.model.User;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 @Service
 public class TokenService {
+
     @Value("${api.security.token.secret}")
     private String secret;
 
@@ -22,12 +24,12 @@ public class TokenService {
             return JWT.create()
                     .withIssuer("API ForumHub")
                     .withSubject(user.getEmail())
-                    .withClaim("id", user.getId())
+                    .withClaim("id", user.getId().toString()) // Convert UUID to String
                     .withClaim("role", user.getProfile().getName())
                     .withExpiresAt(expirationDate())
                     .sign(algorithm);
         } catch (JWTCreationException exception) {
-            throw new RuntimeException("error generating jwt token", exception);
+            throw new RuntimeException("Error generating token", exception);
         }
     }
 
@@ -40,11 +42,11 @@ public class TokenService {
                     .verify(tokenJWT)
                     .getSubject();
         } catch (JWTVerificationException exception) {
-            throw new RuntimeException("Invalid or expired JWT Token!");
+            throw new RuntimeException("Token JWT invalid or expired!");
         }
     }
 
     private Instant expirationDate() {
-        return LocalDateTime.now().plusHours(1).toInstant(ZoneOffset.of("-03:00"));
+        return LocalDateTime.now().plusHours(2).toInstant(ZoneOffset.of("-03:00"));
     }
 }

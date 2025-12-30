@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -47,7 +48,8 @@ public class UserController {
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Delete a user (Admin only)")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        // Fixed: UUID check
         if (securityService.isResourceOwner(id)) {
             return ResponseEntity.badRequest().build();
         }
@@ -58,7 +60,8 @@ public class UserController {
     @PatchMapping("/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Change user role (Admin only)")
-    public ResponseEntity<UserResponseDTO> changeRole(@PathVariable Long id, @RequestBody Long profileId) {
+    public ResponseEntity<UserResponseDTO> changeRole(@PathVariable UUID id, @RequestBody UUID profileId) {
+        // Fixed: UUID check
         if (securityService.isResourceOwner(id)) {
             return ResponseEntity.badRequest().build();
         }
@@ -68,13 +71,22 @@ public class UserController {
     @PostMapping("/{id}/block")
     @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
     @Operation(summary = "Block user (Admin/Moderator only)")
-    public ResponseEntity<Void> blockUser(@PathVariable Long id, @RequestBody BlockRequestDTO dto) {
+    public ResponseEntity<Void> blockUser(@PathVariable UUID id, @RequestBody BlockRequestDTO dto) {
+        // Fixed: UUID check
         if (securityService.isResourceOwner(id)) {
             return ResponseEntity.badRequest().build();
         }
+
+        var targetUser = service.findById(id);
+        var targetUserDTO = service.toDTO(targetUser);
+        boolean targetIsAdmin = "ROLE_ADMIN".equals(targetUserDTO.profile());
+        boolean currentUserIsAdmin = securityService.hasRole("ROLE_ADMIN");
+
+        if (targetIsAdmin && !currentUserIsAdmin) {
+            return ResponseEntity.status(403).build();
+        }
         
-        // Moderador só pode suspender (não banir permanente) e por no máximo 1 dia
-        boolean isOnlyModerator = securityService.hasRole("ROLE_MODERATOR") && !securityService.hasRole("ROLE_ADMIN");
+        boolean isOnlyModerator = securityService.hasRole("ROLE_MODERATOR") && !currentUserIsAdmin;
         
         if (isOnlyModerator) {
             if (Boolean.TRUE.equals(dto.permanent()) || (dto.days() != null && dto.days() > 1)) {
@@ -89,7 +101,7 @@ public class UserController {
     @PostMapping("/{id}/unblock")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Unblock user (Admin only)")
-    public ResponseEntity<Void> unblockUser(@PathVariable Long id) {
+    public ResponseEntity<Void> unblockUser(@PathVariable UUID id) {
         service.unblock(id);
         return ResponseEntity.ok().build();
     }

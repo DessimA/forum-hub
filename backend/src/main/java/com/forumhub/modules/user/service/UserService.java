@@ -1,106 +1,114 @@
 package com.forumhub.modules.user.service;
 
+import com.forumhub.modules.user.controller.UserController;
 import com.forumhub.modules.user.dto.UserResponseDTO;
 import com.forumhub.modules.user.dto.UserUpdateDTO;
-import com.forumhub.modules.user.model.Profile;
 import com.forumhub.modules.user.model.User;
 import com.forumhub.modules.user.repository.UserRepository;
+import com.forumhub.modules.audit.service.AuditLogService;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.lang.NonNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class UserService {
+    private static final Logger log = LoggerFactory.getLogger(UserService.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    public List<UserResponseDTO> listAll() {
-        log.debug("Listing all users");
-        return userRepository.findAll().stream().map(this::toDTO).toList();
-    }
+    private final AuditLogService auditLogService;
 
     @Transactional
-    public UserResponseDTO updateProfile(@NonNull User user, @NonNull UserUpdateDTO updateRequest) {
-        log.info("Updating profile for user ID: {}", user.getId());
-        var existingUser = userRepository.findById(user.getId())
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("User not found with ID: " + user.getId()));
+    public UserResponseDTO updateProfile(User user, UserUpdateDTO dto) {
+        log.info("Updating profile for user: {}", user.getEmail());
         
-        existingUser.setName(updateRequest.name());
-        existingUser.setEmail(updateRequest.email());
+        var entity = userRepository.findById(user.getId()).orElseThrow();
         
-        if (updateRequest.password() != null && !updateRequest.password().isBlank()) {
-            log.debug("Updating password for user ID: {}", user.getId());
-            existingUser.setPassword(passwordEncoder.encode(updateRequest.password()));
+        if (dto.name() != null) entity.setName(dto.name());
+        if (dto.email() != null) entity.setEmail(dto.email());
+        if (dto.password() != null && !dto.password().isBlank()) {
+            entity.setPassword(passwordEncoder.encode(dto.password()));
         }
         
-        return toDTO(existingUser);
+        return toDTO(entity);
+    }
+
+    public List<UserResponseDTO> listAll() {
+        return userRepository.findAll().stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
     }
 
     @Transactional
-    public void delete(@NonNull Long userId) {
-        log.info("Deleting user ID: {}", userId);
-        userRepository.deleteById(userId);
+    public void delete(UUID id) {
+        log.info("Deleting user ID: {}", id);
+        auditLogService.logAction("DELETE", "USER", id, "User deleted", "Cleanup");
+        userRepository.deleteById(id);
     }
 
     @Transactional
-    public UserResponseDTO changeRole(@NonNull Long userId, @NonNull Long profileId) {
-        log.info("Changing role for user ID: {} to profile ID: {}", userId, profileId);
-        var user = userRepository.findById(userId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("User not found with ID: " + userId));
+    public UserResponseDTO changeRole(UUID id, UUID profileId) {
+        log.info("Changing role for user ID: {} to profile ID: {}", id, profileId);
+        var user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
         
-        var profile = new Profile();
+        var profile = new com.forumhub.modules.user.model.Profile();
         profile.setId(profileId);
         user.setProfile(profile);
         
-        var savedUser = userRepository.save(user);
-        log.info("Role changed successfully for user ID: {}", userId);
-        
-        return toDTO(savedUser);
+        auditLogService.logAction("UPDATE_ROLE", "USER", id, "New profile: " + profileId, "Admin action");
+        return toDTO(userRepository.save(user));
     }
 
     @Transactional
-    public void block(@NonNull Long userId, @NonNull com.forumhub.modules.user.controller.UserController.BlockRequestDTO blockRequest, String justification) {
-        log.info("Blocking user ID: {} with justification: {}", userId, justification);
-        var user = userRepository.findById(userId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("User not found with ID: " + userId));
+    public void block(UUID id, UserController.BlockRequestDTO dto, String justification) {
+        log.info("Blocking user ID: {}. Permanent: {}", id, dto.permanent());
+        var user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
         
         user.setSuspensionJustification(justification);
-        if (Boolean.TRUE.equals(blockRequest.permanent())) {
-            log.info("Applying permanent block to user ID: {}", userId);
-            user.setIsPermanentBlocked(true);
-        } else if (blockRequest.days() != null) {
-            log.info("Applying temporary block of {} days to user ID: {}", blockRequest.days(), userId);
-            user.setBlockedUntil(java.time.LocalDateTime.now().plusDays(blockRequest.days()));
-        }
         
+        if (Boolean.TRUE.equals(dto.permanent())) {
+            user.setIsPermanentBlocked(true);
+            user.setBlockedUntil(null);
+            auditLogService.logAction("PERMANENT_BLOCK", "USER", id, justification, justification);
+        } else {
+            user.setIsPermanentBlocked(false);
+            user.setBlockedUntil(LocalDateTime.now().plusDays(dto.days()));
+            auditLogService.logAction("TEMPORARY_BLOCK", "USER", id, "Days: " + dto.days(), justification);
+        }
         userRepository.save(user);
     }
 
     @Transactional
-    public void unblock(@NonNull Long userId) {
-        log.info("Unblocking user ID: {}", userId);
-        var user = userRepository.findById(userId)
-                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("User not found with ID: " + userId));
-        
+    public void unblock(UUID id) {
+        log.info("Unblocking user ID: {}", id);
+        var user = userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
         user.setIsPermanentBlocked(false);
         user.setBlockedUntil(null);
+        user.setSuspensionJustification(null);
         userRepository.save(user);
-        log.info("User ID: {} unblocked successfully", userId);
+        auditLogService.logAction("UNBLOCK", "USER", id, "User unblocked", "Admin action");
     }
 
-    public UserResponseDTO toDTO(@NonNull User user) {
+    public User findById(UUID id) {
+        return userRepository.findById(id).orElseThrow(() -> new EntityNotFoundException("User not found"));
+    }
+
+    public UserResponseDTO toDTO(User user) {
         return new UserResponseDTO(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
-                user.getProfile() != null ? user.getProfile().getName() : "UNDEFINED",
+                user.getProfile() != null ? user.getProfile().getName() : "ROLE_USER",
                 user.getCreatedAt()
         );
     }
