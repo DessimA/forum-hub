@@ -4,15 +4,16 @@ import com.forumhub.modules.answer.dto.AnswerResponseDTO;
 import com.forumhub.modules.topic.model.TopicStatus;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 public record TopicDetailResponseDTO(
-    Long id,
+    UUID id,
     String title,
     String message,
     LocalDateTime createdAt,
     TopicStatus status,
     String author,
-    Long authorId,
+    UUID authorId,
     String authorEmail,
     String course,
     List<AnswerResponseDTO> answers

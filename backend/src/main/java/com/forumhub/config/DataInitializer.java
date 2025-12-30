@@ -9,8 +9,11 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.UUID;
+
 @Configuration
 @RequiredArgsConstructor
+@org.springframework.context.annotation.Profile("!test")
 public class DataInitializer implements CommandLineRunner {
 
     private final UserRepository userRepository;
@@ -19,23 +22,29 @@ public class DataInitializer implements CommandLineRunner {
 
     @Override
     public void run(String... args) {
-        if (userRepository.findByEmail("admin@forumhub.com") == null) {
-            Profile adminProfile = profileRepository.findByName("ROLE_ADMIN")
-                    .orElseGet(() -> profileRepository.save(new Profile(null, "ROLE_ADMIN")));
-            
-            if (profileRepository.findByName("ROLE_USER").isEmpty()) {
-                profileRepository.save(new Profile(null, "ROLE_USER"));
-            }
+        // Fixed UUIDs as defined in V2 migration
+        UUID adminProfileId = UUID.fromString("550e8400-e29b-41d4-a716-446655440000");
+        UUID moderatorProfileId = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
+        UUID userProfileId = UUID.fromString("550e8400-e29b-41d4-a716-446655440002");
 
-            User admin = User.builder()
+        var adminProfile = profileRepository.findByName("ROLE_ADMIN")
+                .orElseGet(() -> profileRepository.save(new Profile(adminProfileId, "ROLE_ADMIN")));
+        
+        profileRepository.findByName("ROLE_MODERATOR")
+                .orElseGet(() -> profileRepository.save(new Profile(moderatorProfileId, "ROLE_MODERATOR")));
+
+        profileRepository.findByName("ROLE_USER")
+                .orElseGet(() -> profileRepository.save(new Profile(userProfileId, "ROLE_USER")));
+
+        if (userRepository.findByEmail("admin@forumhub.com").isEmpty()) {
+            var admin = User.builder()
                     .name("Administrator")
                     .email("admin@forumhub.com")
                     .password(passwordEncoder.encode("admin123"))
                     .profile(adminProfile)
+                    .isPermanentBlocked(false)
                     .build();
-            
             userRepository.save(admin);
-            System.out.println("Default admin user created: admin@forumhub.com / admin123");
         }
     }
 }

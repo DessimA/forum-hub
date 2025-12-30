@@ -7,6 +7,9 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class SecurityValidationService {
@@ -14,7 +17,12 @@ public class SecurityValidationService {
     private final UserRepository userRepository;
 
     public User getCurrentAuthenticatedUser() {
-        var principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            throw new AccessDeniedException("Not authenticated");
+        }
+        
+        var principal = auth.getPrincipal();
         String email;
         if (principal instanceof org.springframework.security.core.userdetails.UserDetails userDetails) {
             email = userDetails.getUsername();
@@ -24,11 +32,16 @@ public class SecurityValidationService {
             email = principal.toString();
         }
 
-        var userDetails = userRepository.findByEmail(email);
-        if (userDetails == null) {
-            throw new AccessDeniedException("User not found or not authenticated");
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new AccessDeniedException("User not found: " + email));
+        
+        // Defesa em profundidade: Verifica se o usuário está bloqueado
+        if (Boolean.TRUE.equals(user.getIsPermanentBlocked()) || 
+           (user.getBlockedUntil() != null && user.getBlockedUntil().isAfter(LocalDateTime.now()))) {
+            throw new AccessDeniedException("Account is suspended or banned");
         }
-        return (User) userDetails;
+        
+        return user;
     }
 
     public void validateOwnerOrModerator(User resourceOwner) {
@@ -48,7 +61,7 @@ public class SecurityValidationService {
                 .anyMatch(a -> a.getAuthority().equals(role));
     }
 
-    public boolean isResourceOwner(Long userId) {
+    public boolean isResourceOwner(UUID userId) {
         var currentUser = getCurrentAuthenticatedUser();
         return currentUser.getId().equals(userId);
     }
