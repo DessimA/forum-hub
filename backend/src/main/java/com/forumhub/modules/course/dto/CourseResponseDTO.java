@@ -1,7 +1,9 @@
 package com.forumhub.modules.course.dto;
 
+import java.util.UUID;
+
 public record CourseResponseDTO(
-    Long id,
+    UUID id,
     String name,
     String category
 ) {}

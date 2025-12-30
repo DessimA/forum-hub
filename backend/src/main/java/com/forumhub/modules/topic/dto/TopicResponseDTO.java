@@ -1,13 +1,17 @@
 package com.forumhub.modules.topic.dto;
 
+import com.forumhub.modules.topic.model.TopicStatus;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
 public record TopicResponseDTO(
-    Long id,
+    UUID id,
     String title,
     String message,
-    java.time.LocalDateTime createdAt,
-    com.forumhub.modules.topic.model.TopicStatus status,
+    LocalDateTime createdAt,
+    TopicStatus status,
     String author,
-    Long authorId,
+    UUID authorId,
     String authorEmail,
     String course
 ) {}

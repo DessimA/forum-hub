@@ -11,5 +11,6 @@ public interface CourseMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     Course toEntity(CourseRequestDTO dto);
-    CourseResponseDTO toResponseDTO(Course course);
+    
+    CourseResponseDTO toResponse(Course course);
 }
