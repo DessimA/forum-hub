@@ -3,7 +3,6 @@ $migrationDir = "backend/src/main/resources/db/migration"
 
 Write-Host "Cleaning up duplicate Flyway migrations..." -ForegroundColor Yellow
 
-# We only want V1, V2__insert-admin-user.sql, V3, V4, V5
 $filesToDelete = @(
     "V2__insert-initial-data.sql",
     "V2_1__insert-initial-data.sql"
@@ -16,5 +15,9 @@ foreach ($file in $filesToDelete) {
         Write-Host "Deleted: $file" -ForegroundColor Green
     }
 }
+
+Write-Host "Cleaning target directories..." -ForegroundColor Yellow
+if (Test-Path "backend/target") { Remove-Item "backend/target" -Recurse -Force }
+if (Test-Path "frontend/dist") { Remove-Item "frontend/dist" -Recurse -Force }
 
 Write-Host "Cleanup complete." -ForegroundColor Cyan

@@ -1,51 +1,58 @@
 CREATE TABLE profiles (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BINARY(16) PRIMARY KEY,
     name VARCHAR(50) NOT NULL UNIQUE
 );
 
 CREATE TABLE users (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BINARY(16) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    profile_id BIGINT NOT NULL,
+    profile_id BINARY(16) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_user_profile FOREIGN KEY (profile_id) REFERENCES profiles(id)
 );
 
 CREATE TABLE courses (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BINARY(16) PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     category VARCHAR(50) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE topics (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BINARY(16) PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     message TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status ENUM('OPEN', 'CLOSED', 'RESOLVED') DEFAULT 'OPEN',
-    author_id BIGINT NOT NULL,
-    course_id BIGINT NOT NULL,
+    status VARCHAR(20) DEFAULT 'OPEN',
+    author_id BINARY(16) NOT NULL,
+    course_id BINARY(16) NOT NULL,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_topic_author FOREIGN KEY (author_id) REFERENCES users(id),
     CONSTRAINT fk_topic_course FOREIGN KEY (course_id) REFERENCES courses(id)
 );
 
 CREATE TABLE answers (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id BINARY(16) PRIMARY KEY,
     message TEXT NOT NULL,
-    topic_id BIGINT NOT NULL,
+    topic_id BINARY(16) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    author_id BIGINT NOT NULL,
+    author_id BINARY(16) NOT NULL,
     solution BOOLEAN DEFAULT FALSE,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_answer_topic FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE,
     CONSTRAINT fk_answer_author FOREIGN KEY (author_id) REFERENCES users(id)
 );
 
-INSERT INTO profiles (id, name) VALUES (1, 'ROLE_ADMIN');
-INSERT INTO profiles (id, name) VALUES (2, 'ROLE_MODERATOR');
-INSERT INTO profiles (id, name) VALUES (3, 'ROLE_USER');
+CREATE TABLE audit_logs (
+    id BINARY(16) PRIMARY KEY,
+    action_type VARCHAR(50) NOT NULL,
+    entity_type VARCHAR(50) NOT NULL,
+    entity_id VARCHAR(36) NOT NULL,
+    content TEXT,
+    justification TEXT,
+    performed_by VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

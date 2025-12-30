@@ -40,4 +40,5 @@ desktop.ini
 
 # Automation Scripts
 automation/commit_parts.sh
+automation/docker-cleanup.sh
 automation/*.log
