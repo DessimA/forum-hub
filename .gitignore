@@ -39,6 +39,8 @@ desktop.ini
 */mysql/data/
 
 # Automation Scripts
-automation/commit_parts.sh
+automation/commit-parts.sh
 automation/docker-cleanup.sh
+automation/deep_clean.sh
+automation/auto_commit.sh
 automation/*.log
