@@ -16,18 +16,26 @@
 ## 📚 Documentação / Documentation
 
 ### [🇧🇷 Português](./docs/pt-br/README.md)
-1. [Arquitetura](./docs/pt-br/02-arquitetura.md) (ADR-004 UUIDs)
-2. [Infraestrutura](./docs/pt-br/03-infraestrutura.md) (Docker & Flyway)
-3. [API](./docs/pt-br/04-api.md) (Paginação & JWT)
-4. [Frontend](./docs/pt-br/05-frontend.md) (Clean Dark UI)
-5. [Testes](./docs/pt-br/06-testes.md) (TDD & Integração)
+1. [Introdução](./docs/pt-br/01-introducao.md)
+2. [Arquitetura](./docs/pt-br/02-arquitetura.md) (ADR-004 UUIDs)
+3. [Infraestrutura](./docs/pt-br/03-infraestrutura.md) (Docker & Flyway)
+4. [API](./docs/pt-br/04-api.md) (Paginação & JWT)
+5. [Frontend](./docs/pt-br/05-frontend.md) (Clean Dark UI)
+6. [Testes](./docs/pt-br/06-testes.md) (TDD & Integração)
+7. [Banco de Dados](./docs/pt-br/07-banco-dados.md) (ERD & Schema)
+8. [Melhorias](./docs/pt-br/08-melhorias.md) (Roadmap)
+9. [Análise UX](./docs/pt-br/09-analise-ux-backend.md) (Integração)
 
 ### [🇺🇸 English](./docs/en/README.md)
-1. [Architecture](./docs/en/02-architecture.md)
-2. [Infrastructure](./docs/en/03-infrastructure.md)
-3. [API](./docs/en/04-api.md)
-4. [Frontend](./docs/en/05-frontend.md)
-5. [Testing](./docs/en/06-testing.md)
+1. [Introduction](./docs/en/01-introduction.md)
+2. [Architecture](./docs/en/02-architecture.md)
+3. [Infrastructure](./docs/en/03-infrastructure.md)
+4. [API](./docs/en/04-api.md)
+5. [Frontend](./docs/en/05-frontend.md)
+6. [Testing](./docs/en/06-testing.md)
+7. [Database](./docs/en/07-database.md)
+8. [Improvements](./docs/en/08-improvements.md)
+9. [UX Analysis](./docs/en/09-integration-analysis.md)
 
 ---
 
@@ -35,9 +43,9 @@
 
 ### Pré-requisitos / Prerequisites
 - Docker & Docker Compose
-- Git
+- Node.js 22+ (Optional / Local Dev)
 
-### Como executar / How to run (Scripts de Automação)
+### Como executar / How to run (Automação / Automation)
 
 **PT-BR:**
 1. Clone o repositório.
@@ -55,7 +63,7 @@
 
 ## 🛠️ Tecnologias / Tech Stack
 
-- **Backend:** Java 17, Spring Boot 3.4, Hibernate, Flyway (MySQL/H2 parity), Spring Security (JWT).
-- **Frontend:** Vue.js 3 (Composition API), TypeScript, Pinia, Vuetify 3 (Subtle Neon UI), Vite.
+- **Backend:** Java 17, Spring Boot 3.4.1, Hibernate, Flyway (MySQL 8), Spring Security (JWT).
+- **Frontend:** Vue.js 3.5+ (Composition API), TypeScript, Pinia 2.3, Vuetify 3.11 (Subtle Neon UI), Vite 6.
+- **Tests:** JUnit 5, Mockito, Vitest 4, Vue Test Utils.
 - **Infra:** Docker Multi-profile, MySQL 8.4, Spring Actuator.
-- **Tests:** JUnit 5, Mockito, Vitest, Vue Test Utils.
