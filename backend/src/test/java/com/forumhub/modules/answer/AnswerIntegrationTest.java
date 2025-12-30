@@ -24,6 +24,8 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -41,24 +43,17 @@ class AnswerIntegrationTest {
     @Autowired private ProfileRepository profileRepository;
     @Autowired private AnswerRepository answerRepository;
 
-    private Long topicId;
+    private UUID topicId;
     private User author;
 
     @BeforeEach
     void setup() {
-        if (profileRepository.findByName("ROLE_USER").isEmpty()) {
-            profileRepository.save(new Profile(null, "ROLE_USER"));
-        }
+        var profile = profileRepository.findByName("ROLE_USER").orElseGet(() -> profileRepository.save(new Profile(UUID.randomUUID(), "ROLE_USER")));
         
-        var userFound = userRepository.findByEmail("author@test.com");
-        if (userFound == null) {
-            var profile = profileRepository.findByName("ROLE_USER").get();
-            author = userRepository.save(User.builder().name("Author").email("author@test.com").password("123").profile(profile).build());
-        } else {
-            author = (User) userFound;
-        }
+        author = userRepository.findByEmail("author@test.com")
+                .orElseGet(() -> userRepository.save(User.builder().name("Author").email("author@test.com").password("123").profile(profile).build()));
         
-        var course = courseRepository.save(new Course(null, "Course", "Cat", null));
+        var course = courseRepository.save(new Course(UUID.randomUUID(), "Course", "Cat", null));
         
         var topic = topicRepository.save(Topic.builder()
                 .title("Topic Integration")
@@ -69,10 +64,11 @@ class AnswerIntegrationTest {
                 .build());
         topicId = topic.getId();
 
-        var answer = new com.forumhub.modules.answer.model.Answer();
-        answer.setMessage("Existing Answer");
-        answer.setTopic(topic);
-        answer.setAuthor(author);
+        var answer = com.forumhub.modules.answer.model.Answer.builder()
+                .message("Existing Answer")
+                .topic(topic)
+                .author(author)
+                .build();
         answerRepository.save(answer);
     }
 

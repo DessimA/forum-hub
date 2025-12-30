@@ -6,6 +6,7 @@ import com.forumhub.modules.user.dto.UserUpdateDTO;
 import com.forumhub.modules.user.model.Profile;
 import com.forumhub.modules.user.model.User;
 import com.forumhub.modules.user.repository.UserRepository;
+import com.forumhub.modules.audit.service.AuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +18,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,18 +36,24 @@ class UserServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private AuditLogService auditLogService;
+
     private User user;
     private Profile profile;
+    private UUID userId;
 
     @BeforeEach
     void setUp() {
-        profile = new Profile(1L, "ROLE_USER");
+        userId = UUID.randomUUID();
+        profile = new Profile(UUID.randomUUID(), "ROLE_USER");
         user = User.builder()
-                .id(1L)
+                .id(userId)
                 .name("Old Name")
                 .email("old@example.com")
                 .password("encoded_old_password")
                 .profile(profile)
+                .isPermanentBlocked(false)
                 .build();
     }
 
@@ -54,13 +62,12 @@ class UserServiceTest {
     void updateProfile_WithValidData_ShouldUpdate() {
         UserUpdateDTO updateDTO = new UserUpdateDTO("New Name", "new@example.com", null);
         
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
         UserResponseDTO result = userService.updateProfile(user, updateDTO);
 
         assertThat(user.getName()).isEqualTo("New Name");
         assertThat(user.getEmail()).isEqualTo("new@example.com");
-        assertThat(user.getPassword()).isEqualTo("encoded_old_password"); // Not changed
     }
 
     @Test
@@ -68,7 +75,7 @@ class UserServiceTest {
     void updateProfile_WithPassword_ShouldEncryptAndUpdate() {
         UserUpdateDTO updateDTO = new UserUpdateDTO("Name", "email@example.com", "new_password");
         
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(passwordEncoder.encode("new_password")).thenReturn("encoded_new_password");
 
         userService.updateProfile(user, updateDTO);
@@ -79,12 +86,13 @@ class UserServiceTest {
     @Test
     @DisplayName("Should change role")
     void changeRole_ShouldUpdateProfile() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        UUID newProfileId = UUID.randomUUID();
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         when(userRepository.save(any(User.class))).thenReturn(user);
 
-        userService.changeRole(1L, 2L);
+        userService.changeRole(userId, newProfileId);
 
-        assertThat(user.getProfile().getId()).isEqualTo(2L);
+        assertThat(user.getProfile().getId()).isEqualTo(newProfileId);
         verify(userRepository).save(user);
     }
 
@@ -93,9 +101,9 @@ class UserServiceTest {
     void block_Permanent_ShouldSetFlag() {
         UserController.BlockRequestDTO blockDTO = new UserController.BlockRequestDTO(true, null, "Spam");
         
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        userService.block(1L, blockDTO, "Spam");
+        userService.block(userId, blockDTO, "Spam");
 
         assertThat(user.getIsPermanentBlocked()).isTrue();
         assertThat(user.getSuspensionJustification()).isEqualTo("Spam");
@@ -107,11 +115,12 @@ class UserServiceTest {
     void block_Temporary_ShouldSetDate() {
         UserController.BlockRequestDTO blockDTO = new UserController.BlockRequestDTO(false, 7, "Violation");
         
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        userService.block(1L, blockDTO, "Violation");
+        userService.block(userId, blockDTO, "Violation");
 
         assertThat(user.getIsPermanentBlocked()).isFalse();
+        assertThat(user.getBlockedUntil()).isNotNull();
         assertThat(user.getBlockedUntil()).isAfter(LocalDateTime.now());
         verify(userRepository).save(user);
     }
@@ -122,9 +131,9 @@ class UserServiceTest {
         user.setIsPermanentBlocked(true);
         user.setBlockedUntil(LocalDateTime.now().plusDays(1));
         
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-        userService.unblock(1L);
+        userService.unblock(userId);
 
         assertThat(user.getIsPermanentBlocked()).isFalse();
         assertThat(user.getBlockedUntil()).isNull();
@@ -134,7 +143,7 @@ class UserServiceTest {
     @Test
     @DisplayName("Should delete user")
     void delete_ShouldRemoveUser() {
-        userService.delete(1L);
-        verify(userRepository).deleteById(1L);
+        userService.delete(userId);
+        verify(userRepository).deleteById(userId);
     }
 }

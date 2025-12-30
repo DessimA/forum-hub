@@ -28,7 +28,7 @@ describe('Auth Store', () => {
     // @ts-ignore
     api.post.mockResolvedValue({ data: { token: mockToken } })
 
-    await store.login({ email: 'test@test.com', senha: 'password' })
+    await store.login({ email: 'test@test.com', password: 'password' })
 
     expect(store.token).toBe(mockToken)
     expect(window.localStorage.getItem('token')).toBe(mockToken)
@@ -40,7 +40,7 @@ describe('Auth Store', () => {
     // @ts-ignore
     api.post.mockRejectedValue(new Error('Login failed'))
 
-    await expect(store.login({ email: 'test@test.com', senha: 'wrong' })).rejects.toThrow('Login failed')
+    await expect(store.login({ email: 'test@test.com', password: 'wrong' })).rejects.toThrow('Login failed')
     expect(store.token).toBe('')
     expect(store.loading).toBe(false)
   })
