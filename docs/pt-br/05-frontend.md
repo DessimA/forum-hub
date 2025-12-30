@@ -17,11 +17,15 @@ Utilizamos **Vue 3** com **Composition API** e **TypeScript**:
 - **Services:** Camada de abstração da API utilizando **Axios**, centralizada em `src/services/api.ts`.
 
 ## 🛠️ Tecnologias Principais
-- **Vue.js 3:** Framework reativo.
-- **Vuetify 3:** Biblioteca de componentes baseada em Material Design.
-- **Vite:** Ferramenta de build e servidor de desenvolvimento ultra-rápido.
+- **Vue.js 3:** Framework reativo (v3.5+).
+- **Vuetify 3:** Biblioteca de componentes baseada em Material Design (v3.11+).
+- **Vite:** Ferramenta de build e servidor de desenvolvimento ultra-rápido (v6+).
 - **Pinia:** Store de estado oficial para Vue.
-- **Vitest:** Framework de testes unitários.
+- **Vitest:** Framework de testes unitários (v4+).
+
+## ⚙️ Requisitos de Ambiente
+- **Node.js:** Versão 22 ou superior (LTS recomendada).
+- **Docker:** Para execução isolada e testes de integração.
 
 ## 🔑 Fluxo de Autenticação e Segurança
 1. **Login:** O usuário envia `email` e `password`.
