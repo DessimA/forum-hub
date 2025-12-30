@@ -1,62 +1,103 @@
-import { describe, it, expect, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
 import TopicDetailView from '../topic/TopicDetailView.vue'
 import { createTestingPinia } from '@pinia/testing'
 import api from '@/services/api'
+import { useAuthStore } from '@/stores/auth'
 
-vi.mock('@/services/api')
+// Mock Vuetify
+const VContainer = { template: '<div><slot /></div>' }
+const VCard = { template: '<div><slot /></div>' }
+const VBtn = { 
+  props: ['icon'],
+  template: '<button :data-icon="icon"><slot /></button>' 
+}
+const VIcon = { template: '<i />' }
+const VChip = { template: '<span><slot /></span>' }
+const VDivider = { template: '<hr />' }
+const VTextarea = { props: ['modelValue'], template: '<textarea :value="modelValue" />' }
+const VTextField = { props: ['modelValue'], template: '<input :value="modelValue" />' }
+const VDialog = { props: ['modelValue'], template: '<div><slot v-if="modelValue" /></div>' }
+
+const globalComponents = { VContainer, VCard, VBtn, VIcon, VChip, VDivider, VTextarea, VTextField, VDialog }
+
+vi.mock('@/services/api', () => ({
+  default: {
+    get: vi.fn(),
+    post: vi.fn(),
+    put: vi.fn(),
+    patch: vi.fn(),
+    delete: vi.fn()
+  }
+}))
+
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { id: '1' } }),
   useRouter: () => ({ push: vi.fn() })
 }))
-vi.mock('@/components/layout/TheNavbar.vue', () => ({ default: { template: '<div></div>' } }))
 
-// Mock Vuetify (simplified set)
-const VLayout = { template: '<div><slot></slot></div>' }
-const VMain = { template: '<div><slot></slot></div>' }
-const VContainer = { template: '<div><slot></slot></div>' }
-const VCard = { template: '<div><slot></slot></div>' }
-const VChip = { template: '<div><slot></slot></div>' }
-const VIcon = { template: '<i></i>' }
-const VBtn = { template: '<button @click="$emit(\'click\')"><slot></slot></button>' }
-const VDivider = { template: '<hr />' }
-const VTextarea = { template: '<textarea></textarea>' }
-const VDialog = { template: '<div><slot></slot></div>' }
-const VCardTitle = { template: '<div><slot></slot></div>' }
-const VCardText = { template: '<div><slot></slot></div>' }
-const VCardActions = { template: '<div><slot></slot></div>' }
-const VTextField = { template: '<input />' }
-const VSpacer = { template: '<div></div>' }
+describe('TopicDetailView - Moderator Rules', () => {
+  const mockTopic = {
+    id: 1,
+    title: 'Test Topic',
+    author: 'Author',
+    authorId: 1,
+    authorEmail: 'author@test.com',
+    answers: [
+      { id: 10, author: 'Other User', authorId: 2, authorEmail: 'other@test.com', message: 'Hello', solution: false, createdAt: new Date().toISOString() }
+    ],
+    createdAt: new Date().toISOString(),
+    course: 'Java',
+    status: 'OPEN'
+  }
 
-const globalComponents = {
-  VLayout, VMain, VContainer, VCard, VChip, VIcon, VBtn, VDivider, VTextarea,
-  VDialog, VCardTitle, VCardText, VCardActions, VTextField, VSpacer
-}
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.mocked(api.get).mockResolvedValue({ data: mockTopic })
+  })
 
-describe('TopicDetailView', () => {
-  it('renders topic details', async () => {
-    // @ts-ignore
-    api.get.mockResolvedValue({
-      data: {
-        id: 1, title: 'Title', message: 'Message', createdAt: new Date().toISOString(),
-        status: 'OPEN', author: 'Author', authorEmail: 'auth@test.com',
-        course: 'Java', answers: []
-      }
-    })
+  it('shows punishment button for MODERATOR on other users answers', async () => {
+    const pinia = createTestingPinia({ stubActions: false })
+    const authStore = useAuthStore()
+    
+    // Use any to bypass TypeScript read-only check on getters in tests
+    const authStoreAny = authStore as any
+    authStoreAny.isModerator = true
+    authStoreAny.isAdmin = false
+    authStoreAny.userEmail = 'mod@test.com'
 
     const wrapper = mount(TopicDetailView, {
       global: {
-        plugins: [createTestingPinia()],
+        plugins: [pinia],
         components: globalComponents
       }
     })
+    
+    await flushPromises()
+    const buttons = wrapper.findAll('button')
+    const hasBlockBtn = buttons.some(b => b.attributes('data-icon')?.includes('mdi-account-cancel'))
+    expect(hasBlockBtn).toBe(true)
+  })
 
-    // wait for onMounted
-    await new Promise(resolve => setTimeout(resolve, 0))
-    await wrapper.vm.$nextTick()
+  it('hides punishment button for REGULAR USER', async () => {
+    const pinia = createTestingPinia({ stubActions: false })
+    const authStore = useAuthStore()
+    
+    const authStoreAny = authStore as any
+    authStoreAny.isModerator = false
+    authStoreAny.isAdmin = false
+    authStoreAny.userEmail = 'user@test.com'
 
-    expect(wrapper.text()).toContain('Title')
-    expect(wrapper.text()).toContain('Message')
-    expect(wrapper.text()).toContain('Author')
+    const wrapper = mount(TopicDetailView, {
+      global: {
+        plugins: [pinia],
+        components: globalComponents
+      }
+    })
+    
+    await flushPromises()
+    const buttons = wrapper.findAll('button')
+    const hasBlockBtn = buttons.some(b => b.attributes('data-icon')?.includes('mdi-account-cancel'))
+    expect(hasBlockBtn).toBe(false)
   })
 })
