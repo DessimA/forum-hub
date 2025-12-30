@@ -5,6 +5,7 @@ export const useTopicStore = defineStore('topic', {
   state: () => ({
     topics: [] as any[],
     loading: false,
+    showDialog: false,
     pagination: {
       page: 0,
       totalPages: 0,
@@ -28,6 +29,14 @@ export const useTopicStore = defineStore('topic', {
       } finally {
         this.loading = false
       }
+    },
+
+    openDialog() {
+      this.showDialog = true
+    },
+
+    closeDialog() {
+      this.showDialog = false
     }
   }
 })

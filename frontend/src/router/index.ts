@@ -28,6 +28,12 @@ const router = createRouter({
       meta: { requiresAdmin: true }
     },
     {
+      path: '/admin/courses',
+      name: 'course-management',
+      component: () => import('../views/admin/CourseManagementView.vue'),
+      meta: { requiresAuth: true, roles: ['ROLE_ADMIN'] }
+    },
+    {
       path: '/admin/logs',
       name: 'admin-logs',
       component: () => import('../views/admin/AdminLogsView.vue'),
