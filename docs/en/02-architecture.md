@@ -1,53 +1,101 @@
-# 02 - System Architecture
+# 02 - Software Architecture
 
-## 🏗️ Modular Monolith
-The system utilizes a **Modular Monolith** architecture. This ensures isolation between domain business rules while maintaining deployment simplicity.
+This document details the architectural decisions, system design, and patterns adopted in **ForumHub**.
 
-### Block Diagram
+## 🏗️ Overview (C4 Model)
+
+ForumHub follows a **Modular Monolith** architecture, clearly separating the Frontend (SPA) from the Backend (REST API) while maintaining deployment simplicity.
+
+### Container Diagram
+
 ```mermaid
 graph TD
-    subgraph "Presentation Layer"
-        UI[Vue.js SPA]
-    end
-    
-    subgraph "API Layer (Spring Boot)"
+    User("👤 User<br/>(Student or Instructor)")
+
+    subgraph ForumHub [ForumHub System]
         direction TB
-        Auth[Auth Module]
-        Topic[Topic Module]
-        Answer[Answer Module]
-        UserM[User Module]
-        Audit[Audit Module]
+        SPA("🖥️ Single Page Application<br/>(Vue.js 3 + Vite)")
+        API("⚙️ API Application<br/>(Java 17 + Spring Boot 3)")
+        DB[("🗄️ Database<br/>(MySQL 8)")]
     end
-    
-    subgraph "Persistence"
-        DB[(MySQL)]
-        Flyway[Flyway Migrations]
-    end
-    
-    UI <--> Auth
-    UI <--> Topic
-    Topic --> Answer
-    Topic --> UserM
-    Answer --> UserM
-    
-    Auth --> DB
-    Topic --> DB
-    UserM --> DB
-    Audit --> DB
+
+    User -->|Uses HTTPS| SPA
+    SPA -->|JSON/HTTPS| API
+    API -->|JDBC| DB
 ```
 
-## 🛡️ Architectural Decisions (ADRs)
-Key project decisions are documented in [ADRs](../decisions/):
-1. **ADR 001:** Modular Monolith choice.
-2. **ADR 002:** Stateless Authentication with JWT.
-3. **ADR 003:** Mandatory Auditing.
-4. **ADR 004:** **Immutable UUIDs:** Replacing sequential IDs with random UUIDs to prevent IDOR and ensure data restoration integrity.
+---
 
-## 🆔 Entity Identification
-All entities use `java.util.UUID` as their primary key. In the database, they are stored as `BINARY(16)` for maximum performance. Foreign keys follow this pattern, ensuring that audit log references remain valid even after deletion and restoration.
+## 🏛️ Architectural Decision Records (ADRs)
 
-## 📐 Design Principles
-- **SOLID:** Strict application. `SecurityValidationService` isolates security complexity, and `Mappers` (MapStruct) isolate data conversion.
-- **Repository Pattern:** Complete database abstraction via Spring Data JPA.
-- **Service Layer:** All business logic resides exclusively in services, never in controllers.
-- **Clean Code:** Self-explanatory method names in English, small functions, and highly testable code.
+### 1. Decoupled Architecture (Frontend-Backend Separation)
+- **Decision:** Separate UI (Vue.js) from Business Logic (Spring Boot).
+- **Motivation:** Allows independent team development, facilitates horizontal backend scaling, and enables future clients (e.g., Mobile App) to consume the same API.
+
+### 2. Stateless Authentication (JWT)
+- **Decision:** Use JSON Web Tokens (JWT) for authentication.
+- **Motivation:** Eliminates server-side session synchronization (stateless), ideal for containerized and scalable environments.
+
+### 3. Versioned Database Migration (Flyway)
+- **Decision:** Use Flyway to manage database schema.
+- **Motivation:** Ensures database state is reproducible in any environment (Dev, Test, Prod) and avoids manual SQL conflicts.
+
+---
+
+## 🔌 Real Data Flow
+
+The diagram below illustrates the exact flow of a topic creation request, as implemented in `TopicService`:
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Filter as SecurityFilter
+    participant API as TopicController
+    participant Service as TopicService
+    participant Validator as ValidationService
+    participant DB as MySQL
+
+    User->>Filter: POST /topics (Bearer Token)
+    Filter->>Filter: Validates Token & Sets User Context
+    Filter->>API: Forwards Request
+
+    activate API
+    API->>API: @Valid (Bean Validation)
+    API->>Service: create(dto)
+    
+    activate Service
+    Service->>Service: SecurityService.getCurrentUser()
+    Service->>Validator: validateNotDuplicate(title, msg)
+    Validator->>DB: count(title, msg)
+    DB-->>Validator: 0
+    
+    Service->>DB: CourseRepository.findById(courseId)
+    DB-->>Service: Course Entity
+    
+    Service->>Service: Mapper.toEntity(dto)
+    Service->>DB: TopicRepository.save(topic)
+    DB-->>Service: Topic Saved (UUID)
+    
+    Service-->>API: TopicResponseDTO
+    deactivate Service
+    
+    API-->>User: 201 Created (Location Header)
+    deactivate API
+```
+
+---
+
+## 📦 Design Patterns
+
+### Backend
+- **Controller-Service-Repository:** Classic separation of concerns.
+  - *Controller:* Handles HTTP and input validation.
+  - *Service:* Contains pure business rules.
+  - *Repository:* Data access abstraction (Spring Data JPA).
+- **DTO (Data Transfer Object):** We never expose JPA Entities directly. We use DTOs (`TopicRequestDTO`, `TopicResponseDTO`) to decouple domain models from the API contract.
+- **Mapper Pattern:** Using **MapStruct** for performant Entity <-> DTO conversion without boilerplate.
+
+### Frontend
+- **Composition API:** Used instead of Options API for better logic reuse (Composables) and TypeScript type inference.
+- **Store Pattern (Pinia):** Centralized state management for global data (User Session, Theme).
+- **Service Layer:** The frontend has a service layer (`src/services/api.ts`) abstracting HTTP calls (Axios), avoiding direct coupling in visual components.
