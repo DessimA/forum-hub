@@ -16,5 +16,8 @@ public record TopicDetailResponseDTO(
     UUID authorId,
     String authorEmail,
     String course,
+    UUID courseId,
+    Boolean authorIsBlocked,
+    LocalDateTime authorBlockedUntil,
     List<AnswerResponseDTO> answers
 ) {}

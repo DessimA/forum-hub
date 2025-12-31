@@ -34,6 +34,12 @@ public class AnswerController {
         return ResponseEntity.ok(service.toggleSolution(id));
     }
 
+    @PutMapping("/answers/{id}")
+    @Operation(summary = "Update an answer (Author only)")
+    public ResponseEntity<AnswerResponseDTO> update(@PathVariable UUID id, @RequestBody @Valid com.forumhub.modules.answer.dto.AnswerUpdateDTO dto) {
+        return ResponseEntity.ok(service.update(id, dto));
+    }
+
     @DeleteMapping("/answers/{id}")
     @Operation(summary = "Delete an answer")
     public ResponseEntity<Void> delete(@PathVariable UUID id, @RequestParam(required = false) String justification) {

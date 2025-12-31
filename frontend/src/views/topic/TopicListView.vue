@@ -39,12 +39,35 @@ const handleSave = async () => {
   }
 }
 
+const statusOptions = [
+  { title: 'Todos', value: null },
+  { title: 'Aberto', value: 'OPEN' },
+  { title: 'Fechado', value: 'CLOSED' },
+  { title: 'Resolvido', value: 'RESOLVED' }
+]
+
+const sortOptions = [
+  { title: 'Mais Recentes', value: 'createdAt,desc' },
+  { title: 'Mais Antigos', value: 'createdAt,asc' },
+  { title: 'Título (A-Z)', value: 'title,asc' },
+  { title: 'Título (Z-A)', value: 'title,desc' }
+]
+
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'OPEN': return 'primary'
     case 'CLOSED': return 'grey'
     case 'RESOLVED': return 'success'
     default: return 'primary'
+  }
+}
+
+const getStatusText = (status: string) => {
+  switch (status) {
+    case 'OPEN': return 'ABERTO'
+    case 'CLOSED': return 'FECHADO'
+    case 'RESOLVED': return 'RESOLVIDO'
+    default: return status
   }
 }
 
@@ -65,11 +88,73 @@ onMounted(() => {
 <template>
   <v-container class="py-10">
     <v-row>
-      <v-col cols="12" class="d-flex align-center justify-space-between mb-6">
+      <v-col cols="12" class="d-flex align-center justify-space-between mb-2">
         <h2 class="text-h4 font-weight-bold text-white">Explorar Tópicos</h2>
         <v-chip color="primary" variant="outlined" label>
           {{ topicStore.pagination.totalElements }} Tópicos Encontrados
         </v-chip>
+      </v-col>
+
+      <!-- Barra de Filtros -->
+      <v-col cols="12" class="mb-4">
+        <v-card color="surface" variant="flat" class="pa-4 border-subtle d-flex align-center flex-wrap gap-4">
+          <v-text-field
+            v-model="topicStore.filters.search"
+            prepend-inner-icon="mdi-magnify"
+            label="Buscar por título..."
+            density="compact"
+            variant="outlined"
+            hide-details
+            clearable
+            class="search-field"
+            @update:model-value="topicStore.fetchTopics(0)"
+          ></v-text-field>
+
+          <v-select
+            v-model="topicStore.filters.status"
+            :items="statusOptions"
+            label="Status"
+            density="compact"
+            variant="outlined"
+            hide-details
+            class="filter-select"
+            @update:model-value="topicStore.fetchTopics(0)"
+          ></v-select>
+
+          <v-select
+            v-model="topicStore.filters.courseId"
+            :items="courses"
+            item-title="name"
+            item-value="id"
+            label="Curso"
+            density="compact"
+            variant="outlined"
+            hide-details
+            clearable
+            class="filter-select"
+            @update:model-value="topicStore.fetchTopics(0)"
+          ></v-select>
+
+          <v-select
+            v-model="topicStore.filters.sort"
+            :items="sortOptions"
+            label="Ordenar por"
+            density="compact"
+            variant="outlined"
+            hide-details
+            class="filter-select"
+            @update:model-value="topicStore.fetchTopics(0)"
+          ></v-select>
+
+          <v-btn
+            prepend-icon="mdi-filter-off-outline"
+            variant="text"
+            color="grey"
+            @click="topicStore.resetFilters()"
+          >
+            Limpar
+          </v-btn>
+        </v-card>
       </v-col>
 
       <v-col v-if="topicStore.loading" cols="12" class="text-center py-10">
@@ -101,8 +186,8 @@ onMounted(() => {
                 </v-chip>
               </div>
             </div>
-            <v-chip :color="getStatusColor(topic.status)" variant="tonal" size="small">
-              {{ topic.status === 'RESOLVED' ? 'RESOLVIDO' : 'ABERTO' }}
+            <v-chip :color="getStatusColor(topic.status)" variant="tonal" size="small" class="font-weight-bold status-chip">
+              {{ getStatusText(topic.status) }}
             </v-chip>
           </div>
           
@@ -155,5 +240,13 @@ onMounted(() => {
 }
 .border-subtle { 
   border: 1px solid rgba(255, 255, 255, 0.1) !important; 
+}
+.filter-select {
+  max-width: 200px;
+  min-width: 150px;
+}
+.search-field {
+  flex-grow: 1;
+  min-width: 250px;
 }
 </style>

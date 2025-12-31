@@ -99,7 +99,7 @@ class UserServiceTest {
     @Test
     @DisplayName("Should block user permanently")
     void block_Permanent_ShouldSetFlag() {
-        UserController.BlockRequestDTO blockDTO = new UserController.BlockRequestDTO(true, null, "Spam");
+        UserController.BlockRequestDTO blockDTO = new UserController.BlockRequestDTO(true, null, "Spam", null, null);
         
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
@@ -113,7 +113,7 @@ class UserServiceTest {
     @Test
     @DisplayName("Should block user temporarily")
     void block_Temporary_ShouldSetDate() {
-        UserController.BlockRequestDTO blockDTO = new UserController.BlockRequestDTO(false, 7, "Violation");
+        UserController.BlockRequestDTO blockDTO = new UserController.BlockRequestDTO(false, 7, "Violation", null, null);
         
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 

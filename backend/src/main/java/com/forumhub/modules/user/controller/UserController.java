@@ -99,12 +99,21 @@ public class UserController {
     }
 
     @PostMapping("/{id}/unblock")
-    @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Unblock user (Admin only)")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MODERATOR')")
+    @Operation(summary = "Unblock user (Admin/Moderator only)")
     public ResponseEntity<Void> unblockUser(@PathVariable UUID id) {
+        var targetUser = service.findById(id);
+        var targetUserDTO = service.toDTO(targetUser);
+        boolean targetIsAdmin = "ROLE_ADMIN".equals(targetUserDTO.profile());
+        boolean currentUserIsAdmin = securityService.hasRole("ROLE_ADMIN");
+
+        if (targetIsAdmin && !currentUserIsAdmin) {
+            return ResponseEntity.status(403).build();
+        }
+
         service.unblock(id);
         return ResponseEntity.ok().build();
     }
 
-    public record BlockRequestDTO(Boolean permanent, Integer days, String justification) {}
+    public record BlockRequestDTO(Boolean permanent, Integer days, String justification, UUID topicId, UUID answerId) {}
 }

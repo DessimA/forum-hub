@@ -1,38 +1,24 @@
 # 05 - Frontend (Vue.js 3)
 
-## 🎨 Design System: Clean & Dark
-O frontend do FórumHub evoluiu para uma estética **Clean Dark** profissional e equilibrada. 
+O frontend do FórumHub prioriza a clareza e a eficiência, utilizando as tecnologias mais recentes do ecossistema Vue.
 
-### Princípios de Design Aplicados:
-- **Visual Sóbrio:** Uso predominante de tons escuros (`#0a0e27`) com transparências estratégicas para revelar a imagem de fundo.
-- **Neon Funcional:** O uso de cores neon (`#00f0ff`) foi reduzido e agora atua como um guia visual sutil, destacando apenas elementos essenciais como bordas superiores de cards ativos ou botões de ação principal.
-- **Fundo Imersivo:** Implementação de uma imagem de fundo (`background.jpg`) com overlay dinâmico para garantir profundidade sem comprometer a legibilidade.
-- **Tipografia:** Roboto como fonte principal para clareza e modernidade.
+## 🎨 User Experience (UX)
+A interface é construída inteiramente sobre o **Vuetify 3**, garantindo que todas as interações críticas ocorram através de componentes integrados, sem o uso de janelas nativas do navegador.
 
-## 🏗️ Estrutura do Código
-Utilizamos **Vue 3** com **Composition API** e **TypeScript**:
-- **Views:** Páginas de alto nível em `src/views/`. Exemplos: `TopicListView`, `TopicDetailView`, `UserManagementView`.
-- **Components:** Componentes de layout e comuns em `src/components/`.
-- **Stores (Pinia):** Gerenciamento de estado modularizado (`auth.ts`, `topic.ts`, `course.ts`).
-- **Services:** Camada de abstração da API utilizando **Axios**, centralizada em `src/services/api.ts`.
+### Padrões de Interface:
+- **Navegação Dinâmica:** A listagem de tópicos possui uma barra de ferramentas integrada que sincroniza o estado da busca (filtros e ordenação) diretamente com a URL e a Store.
+- **Fluxos de Trabalho:** Ações de moderação, edição e exclusão utilizam `v-dialog` com validação de campo em tempo real.
+- **Notificações:** Sucesso e falha de operações (ex: "Resposta Enviada", "Erro de Permissão") são comunicados via `v-snackbar` de forma não intrusiva.
 
-## 🛠️ Tecnologias Principais
-- **Vue.js 3:** Framework reativo (v3.5+).
-- **Vuetify 3:** Biblioteca de componentes baseada em Material Design (v3.11+).
-- **Vite:** Ferramenta de build e servidor de desenvolvimento ultra-rápido (v6+).
-- **Pinia:** Store de estado oficial para Vue.
-- **Vitest:** Framework de testes unitários (v4+).
+---
 
-## ⚙️ Requisitos de Ambiente
-- **Node.js:** Versão 22 ou superior (LTS recomendada).
-- **Docker:** Para execução isolada e testes de integração.
+## 🏗️ Gestão de Estado (Pinia)
+O estado da aplicação é descentralizado em stores especializadas:
+- **TopicStore:** Gerencia a complexidade da busca. Filtros de `status`, `courseId` e `title` são preservados durante a paginação para evitar perda de contexto.
+- **AuthStore:** Decodifica o JWT para gerenciar a hierarquia visual (escondendo botões de moderação para usuários comuns).
 
-## 🔑 Fluxo de Autenticação e Segurança
-1. **Login:** O usuário envia `email` e `password`.
-2. **Token:** O backend retorna um JWT que é persistido no `localStorage`.
-3. **Persistência de Estado:** O `AuthStore` extrai informações do token (email, roles) via decodificação Base64 para controle de UI instantâneo.
-4. **Interceptores:** Todas as requisições via Axios incluem automaticamente o header `Authorization: Bearer {token}`.
+---
 
-## 📁 Convenções
-- **Nomenclatura:** Arquivos de componentes em `PascalCase` (`TheNavbar.vue`), views em `PascalCase` (`TopicListView.vue`).
-- **Padrão de Linguagem:** Todo o código, variáveis e nomes de campos seguem o padrão **Inglês** (ex: `password` em vez de `senha`, `name` em vez de `nome`).
+## 🔒 Estabilidade e Performance
+- **Vite 6:** Configurado com `inline dependencies` para processar corretamente o CSS do Vuetify durante os testes.
+- **Nginx Cache Busting:** A configuração de infraestrutura garante que o `index.html` nunca seja cacheado, prevenindo erros de carregamento de scripts após novos deploys (MIME type errors).

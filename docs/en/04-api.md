@@ -1,30 +1,55 @@
-# 04 - API Documentation
+# 04 - API Documentation (REST)
 
-## 🔐 Security and Authentication
-The API utilizes **Stateless Authentication** with **JWT** Tokens.
-- All routes under `/api/v1` (except `/auth/**` and `GET /courses`) require the `Authorization: Bearer <token>` header.
-- **Standardization:** All input and output fields use **English** names (`name`, `password`, `email`, `id`).
+The ForumHub API follows REST principles, using JSON for communication and JWT for security.
 
-## 📍 Featured Endpoints
+## 🔐 Authentication
+- **Base URL:** `/api/v1/auth`
+- **Endpoints:**
+  - `POST /login`: Authenticates user and returns a token.
+  - `POST /register`: Registers a new user.
 
-### Authentication (`/api/v1/auth`)
-- `POST /login`: Authenticates and returns the JWT. Payload: `{ "email", "password" }`.
-- `POST /register`: Creates a new account with the `ROLE_USER` profile.
+## 📝 Topics
+- **Base URL:** `/api/v1/topics`
 
-### Topics (`/api/v1/topics`)
-- `GET /`: Paginated listing (`Page<TopicResponseDTO>`). Supported parameters: `page`, `size`, `sort`.
-- `POST /`: Topic creation. The author is automatically extracted from the security context.
-- `DELETE /{id}`: Logical deletion with audit log entry. Requires justification if performed by a moderator.
+### Listing with Dynamic Filters
+`GET /topics`
+Returns a paginated list of topics. Supports the following query parameters:
 
-### Courses (`/api/v1/courses`)
-- `GET /`: Now with **Mandatory Pagination** to ensure scalability.
-- `POST /`: Course registration (Restricted access: `ROLE_ADMIN`).
+| Parameter | Type | Description |
+| :--- | :--- | :--- |
+| `page` | Integer | Page number (zero-indexed). |
+| `size` | Integer | Items per page (default: 10). |
+| `sort` | String | Sorting (e.g., `createdAt,desc` or `title,asc`). |
+| `title` | String | Partial search by title (Case-insensitive). |
+| `courseId` | UUID | Filters topics from a specific course. |
+| `status` | Enum | Filters by `OPEN`, `CLOSED`, or `RESOLVED`. |
+| `year` | Integer | Filters by creation year. |
 
-### Users and Administration (`/api/v1/users`)
-- `GET /profile`: Logged-in user data.
-- `POST /{id}/block`: Support for **Permanent** or **Temporary** (days) block.
-- `POST /admin/logs/{id}/restore`: Unique system for restoring deleted entities.
+### Topic Lifecycle
+- `POST /topics`: Creates a new topic.
+- `GET /topics/{id}`: Topic details, including answers and author's blocking status.
+- `PUT /topics/{id}`: Updates title, message, or **changes the course** (Author only).
+- `PATCH /topics/{id}/close`: Closes the topic for new interactions.
+- `PATCH /topics/{id}/reopen`: Reopens a closed topic.
+- `DELETE /topics/{id}`: Logical deletion with audit backup.
 
-## 📖 Complete Documentation (Swagger)
-The API is fully documented with **SpringDoc / OpenAPI 3**. Access it to see all data schemas and error codes:
-`http://localhost:8080/swagger-ui.html`
+## 💬 Answers and Solutions
+- **Endpoints:**
+  - `POST /topics/{topicId}/answers`: Adds a reply (Only for `OPEN` topics).
+  - `PUT /answers/{id}`: Edits answer content (Author only).
+  - `PATCH /answers/{id}/solution`: Toggles solution status (Only topic author).
+  - `DELETE /answers/{id}`: Removes answer with audit backup.
+
+## 🛡️ User Management & Moderation
+- **Base URL:** `/api/v1/users`
+- **Endpoints:**
+  - `GET /profile`: Current user data.
+  - `POST /{id}/block`: Blocks user. Accepts optional `topicId` or `answerId` for **automatic removal** of offensive content.
+  - `POST /{id}/unblock`: Removes punishment (Admin/Moderator).
+  - `PATCH /{id}/role`: Changes role (Admin only, with hierarchy protection).
+
+## 📊 Auditing
+- **Base URL:** `/api/v1/admin/logs`
+- **Endpoints:**
+  - `GET /`: Lists all deletion and change logs.
+  - `POST /{id}/restore`: Restores a topic or answer using the preserved UUID.

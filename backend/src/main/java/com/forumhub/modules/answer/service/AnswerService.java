@@ -47,6 +47,19 @@ public class AnswerService {
     }
 
     @Transactional
+    public AnswerResponseDTO update(UUID answerId, com.forumhub.modules.answer.dto.AnswerUpdateDTO dto) {
+        var answer = answerRepository.findById(answerId)
+                .orElseThrow(() -> new EntityNotFoundException("Answer not found"));
+        
+        securityService.validateOwner(answer.getAuthor());
+        
+        answer.setMessage(dto.message());
+        answer.setUpdatedAt(java.time.LocalDateTime.now());
+        
+        return mapper.toResponseDTO(answerRepository.save(answer));
+    }
+
+    @Transactional
     public void delete(@NonNull UUID answerId, String justification) {
         var answer = answerRepository.findById(answerId)
                 .orElseThrow(() -> new EntityNotFoundException("Answer not found"));

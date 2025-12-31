@@ -1,71 +1,47 @@
 # 01 - Introduction to ForumHub
 
 ## 📖 About the Project
-**ForumHub** is a modern and responsive educational forum platform. Its goal is to allow students and instructors to interact through question and answer topics, organized by courses.
+**ForumHub** is a high-performance educational forum platform focused on proactive security and data integrity. The system enables seamless interaction between students and instructors, with total traceability of actions.
 
-The project was conceived focusing on **Clean Code**, **SOLID**, and **Engineering Best Practices**, serving not just as a functional product but as a robust Full Stack architecture reference.
+The project uses a **Modular Monolith** architecture, ensuring business logic is isolated and maintainable, while the interface delivers a modern and responsive user experience.
 
 ---
 
 ## 📂 Directory Structure
-The project organization reflects the separation of concerns (Frontend vs Backend vs Infrastructure).
+Official repository organization:
 
 ```text
 forum-hub/
-├── automation/             # Automation Scripts (Local CI/CD)
-│   ├── run.sh              # Docker CLI Manager
-│   └── test.sh             # Unified Test Runner
+├── automation/             # Public execution and test scripts
+│   ├── run.sh              # Docker CLI Manager (Interactive Menu)
+│   └── test.sh             # Unified Test Runner (Maven + Vitest)
 │
-├── backend/                # REST API (Java/Spring Boot)
+├── backend/                # Spring Boot 3.4.1 REST API
 │   ├── src/main/java/com/forumhub/
-│   │   ├── config/         # Configs (Security, Swagger)
-│   │   ├── modules/        # Segregated Domains (User, Topic, Course)
-│   │   │   └── [domain]/
-│   │   │       ├── controller/  # REST Endpoints
-│   │   │       ├── service/     # Business Rules
-│   │   │       ├── repository/  # Data Access
-│   │   │       └── dto/         # API Contracts
-│   │   └── security/       # Auth Logic (JWT)
-│   └── src/main/resources/
-│       └── db/migration/   # Versioned SQL Scripts (Flyway)
+│   │   ├── modules/        # Domains (User, Topic, Course, Answer, Audit)
+│   │   ├── security/       # Defense in Depth and JWT
+│   │   └── exception/      # Global error handling (Business & Integrity)
+│   └── src/main/resources/db/migration # Flyway versioning
 │
-├── docs/                   # Project Documentation
-│   ├── pt-br/              # Portuguese Documentation
-│   └── en/                 # English Documentation
-│
-├── frontend/               # Single Page Application (Vue.js)
+├── frontend/               # Vue.js 3.5 + Vuetify 3.11 SPA
 │   ├── src/
-│   │   ├── components/     # Reusable Components (UI)
-│   │   ├── views/          # Application Pages
-│   │   ├── stores/         # Global State (Pinia)
-│   │   ├── services/       # API Integration (Axios)
-│   │   └── types/          # TypeScript Definitions
-│   └── vite.config.ts      # Build Config
+│   │   ├── stores/         # Pinia (Search and Auth global state)
+│   │   ├── views/          # Dialog-based interfaces
+│   │   └── services/       # Axios API client
+│   └── vite.config.ts      # Build and Vitest 4 configuration
 │
-└── infra/                  # Infrastructure as Code
-    ├── backend/            # Backend Dockerfile
-    ├── frontend/           # Dockerfile and Nginx config
-    ├── mysql/              # DB Init Scripts
-    └── docker-compose.yml  # Service Orchestration
+└── infra/                  # Infrastructure (Docker & Nginx)
 ```
 
 ---
 
-## 🚀 Key Features
+## 🚀 Key Features (Current State)
 
 | Module | Feature | Description |
 | :--- | :--- | :--- |
-| **Authentication** | Login/Register | Secure access via JWT with auto-expiration. |
-| **Topics** | Full CRUD | Creation, paginated listing, editing, and deletion of questions. |
-| **Answers** | Interaction | Ability to answer topics and mark solution. |
-| **Dashboard** | Admin | User management and audit logs (Role-based). |
-
----
-
-## 🏁 Getting Started
-
-To run the project locally, refer to the infrastructure guide or use the automation script:
-
-```bash
-./automation/run.sh
-```
+| **Advanced Search** | Filters & Sort | Search by title, course, status, and year with dynamic sorting. |
+| **Lifecycle** | Lock/Unlock | Authors and Moderators can close and reopen discussions. |
+| **Moderation** | Auto-Cleanup | User punishments automatically remove linked offensive content. |
+| **Security** | Real-time Check | Account status verification on every API request. |
+| **Auditing** | Full Restore | Topic and answer recovery preserving original UUIDs. |
+| **Interface** | Modern UX | 100% Dialog and Snackbar based UI (no native popups). |

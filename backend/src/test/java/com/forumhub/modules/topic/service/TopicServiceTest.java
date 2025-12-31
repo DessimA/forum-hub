@@ -76,7 +76,7 @@ class TopicServiceTest {
         UUID id = topic.getId();
         when(topicRepository.findById(id)).thenReturn(Optional.of(topic));
         when(answerRepository.findAllByTopicId(id)).thenReturn(Collections.emptyList());
-        when(topicMapper.toDetailDTO(topic)).thenReturn(new TopicDetailResponseDTO(id, "T", "M", null, TopicStatus.OPEN, "A", user.getId(), "e", "C", Collections.emptyList()));
+        when(topicMapper.toDetailDTO(topic)).thenReturn(new TopicDetailResponseDTO(id, "T", "M", null, TopicStatus.OPEN, "A", user.getId(), "e", "C", course.getId(), false, null, Collections.emptyList()));
 
         var result = service.getDetail(id);
 

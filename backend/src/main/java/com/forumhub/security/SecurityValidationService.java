@@ -55,6 +55,13 @@ public class SecurityValidationService {
         }
     }
 
+    public void validateOwner(User resourceOwner) {
+        var currentUser = getCurrentAuthenticatedUser();
+        if (!resourceOwner.getId().equals(currentUser.getId())) {
+            throw new AccessDeniedException("Permission denied: You must be the owner to perform this action");
+        }
+    }
+
     public boolean hasRole(String role) {
         var currentUser = getCurrentAuthenticatedUser();
         return currentUser.getAuthorities().stream()

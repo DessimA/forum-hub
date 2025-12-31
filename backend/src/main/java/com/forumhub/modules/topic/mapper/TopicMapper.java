@@ -21,12 +21,14 @@ public interface TopicMapper {
     @Mapping(target = "authorId", source = "author.id")
     @Mapping(target = "authorEmail", source = "author.email")
     @Mapping(target = "course", source = "course.name")
+    @Mapping(target = "courseId", source = "course.id")
     TopicResponseDTO toResponseDTO(Topic topic);
 
     @Mapping(target = "author", source = "author.name")
     @Mapping(target = "authorId", source = "author.id")
     @Mapping(target = "authorEmail", source = "author.email")
     @Mapping(target = "course", source = "course.name")
+    @Mapping(target = "courseId", source = "course.id")
     @Mapping(target = "answers", ignore = true)
     TopicDetailResponseDTO toDetailDTO(Topic topic);
 }

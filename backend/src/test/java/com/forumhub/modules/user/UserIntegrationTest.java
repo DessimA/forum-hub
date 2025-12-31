@@ -54,7 +54,7 @@ class UserIntegrationTest {
     @DisplayName("ADMIN should block a USER")
     @WithMockUser(username = "integration-admin@test.com", roles = "ADMIN")
     void adminShouldBlockUser() throws Exception {
-        var dto = new UserController.BlockRequestDTO(true, null, "Spam");
+        var dto = new UserController.BlockRequestDTO(true, null, "Spam", null, null);
         mockMvc.perform(post("/api/v1/users/" + regularUser.getId() + "/block")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -65,7 +65,7 @@ class UserIntegrationTest {
     @DisplayName("MODERATOR should NOT block an ADMIN")
     @WithMockUser(username = "integration-mod@test.com", roles = "MODERATOR")
     void moderatorShouldNotBlockAdmin() throws Exception {
-        var dto = new UserController.BlockRequestDTO(false, 1, "Testing");
+        var dto = new UserController.BlockRequestDTO(false, 1, "Testing", null, null);
         mockMvc.perform(post("/api/v1/users/" + adminUser.getId() + "/block")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -76,7 +76,7 @@ class UserIntegrationTest {
     @DisplayName("MODERATOR should NOT perform permanent block")
     @WithMockUser(username = "integration-mod@test.com", roles = "MODERATOR")
     void moderatorShouldNotPermanentBlock() throws Exception {
-        var dto = new UserController.BlockRequestDTO(true, null, "Abuse");
+        var dto = new UserController.BlockRequestDTO(true, null, "Abuse", null, null);
         mockMvc.perform(post("/api/v1/users/" + regularUser.getId() + "/block")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -87,7 +87,7 @@ class UserIntegrationTest {
     @DisplayName("USER should NOT block anyone")
     @WithMockUser(username = "integration-user@test.com", roles = "USER")
     void userShouldNotBlockAnyone() throws Exception {
-        var dto = new UserController.BlockRequestDTO(false, 1, "Hack");
+        var dto = new UserController.BlockRequestDTO(false, 1, "Hack", null, null);
         mockMvc.perform(post("/api/v1/users/" + moderatorUser.getId() + "/block")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))

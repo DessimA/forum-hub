@@ -8,5 +8,7 @@ public record UserResponseDTO(
     String name,
     String email,
     String profile,
-    LocalDateTime createdAt
+    java.time.LocalDateTime createdAt,
+    Boolean isPermanentBlocked,
+    java.time.LocalDateTime blockedUntil
 ) {}

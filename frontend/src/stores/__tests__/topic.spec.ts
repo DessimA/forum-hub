@@ -30,7 +30,7 @@ describe('Topic Store', () => {
     expect(store.topics).toHaveLength(1)
     expect(store.topics[0].title).toBe('Test Topic')
     expect(store.loading).toBe(false)
-    expect(api.get).toHaveBeenCalledWith('/topics?page=0&size=10')
+    expect(api.get).toHaveBeenCalledWith('/topics?page=0&size=10&sort=createdAt,desc')
   })
 
   it('should fetch topics with pagination parameters', async () => {
@@ -40,7 +40,7 @@ describe('Topic Store', () => {
 
     await store.fetchTopics(2, 20)
 
-    expect(api.get).toHaveBeenCalledWith('/topics?page=2&size=20')
+    expect(api.get).toHaveBeenCalledWith('/topics?page=2&size=20&sort=createdAt,desc')
   })
 
   it('should handle fetch error', async () => {

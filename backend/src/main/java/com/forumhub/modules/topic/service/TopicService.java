@@ -55,8 +55,9 @@ public class TopicService {
         return topicMapper.toResponseDTO(savedTopic);
     }
 
-    public Page<TopicResponseDTO> list(Pageable pageable) {
-        return topicRepository.findAll(pageable).map(topicMapper::toResponseDTO);
+    public Page<TopicResponseDTO> list(Pageable pageable, UUID courseId, TopicStatus status, Integer year, String title) {
+        var spec = com.forumhub.modules.topic.repository.TopicSpecification.filterBy(courseId, status, year, title);
+        return topicRepository.findAll(spec, pageable).map(topicMapper::toResponseDTO);
     }
 
     public TopicDetailResponseDTO getDetail(UUID id) {
@@ -70,7 +71,11 @@ public class TopicService {
         var detail = topicMapper.toDetailDTO(topic);
         return new TopicDetailResponseDTO(
                 detail.id(), detail.title(), detail.message(), detail.createdAt(),
-                detail.status(), detail.author(), detail.authorId(), detail.authorEmail(), detail.course(), answers
+                detail.status(), detail.author(), detail.authorId(), detail.authorEmail(), 
+                detail.course(), detail.courseId(), 
+                topic.getAuthor().getIsPermanentBlocked(),
+                topic.getAuthor().getBlockedUntil(),
+                answers
         );
     }
 
@@ -81,9 +86,39 @@ public class TopicService {
         
         securityService.validateOwnerOrModerator(topic.getAuthor());
         
-        if (dto.title() != null) topic.setTitle(dto.title());
-        if (dto.message() != null) topic.setMessage(dto.message());
+        if (dto.title() != null && !dto.title().isBlank()) topic.setTitle(dto.title());
+        if (dto.message() != null && !dto.message().isBlank()) topic.setMessage(dto.message());
         
+        if (dto.courseId() != null) {
+            var newCourse = courseRepository.findById(dto.courseId())
+                    .orElseThrow(() -> new EntityNotFoundException("Course not found"));
+            topic.setCourse(newCourse);
+        }
+        
+        return topicMapper.toResponseDTO(topicRepository.save(topic));
+    }
+
+    @Transactional
+    public TopicResponseDTO close(UUID id) {
+        var topic = topicRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Topic not found"));
+        
+        securityService.validateOwnerOrModerator(topic.getAuthor());
+        
+        topic.setStatus(TopicStatus.CLOSED);
+        log.info("Topic {} closed by user", id);
+        return topicMapper.toResponseDTO(topicRepository.save(topic));
+    }
+
+    @Transactional
+    public TopicResponseDTO reopen(UUID id) {
+        var topic = topicRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Topic not found"));
+        
+        securityService.validateOwnerOrModerator(topic.getAuthor());
+        
+        topic.setStatus(TopicStatus.OPEN);
+        log.info("Topic {} reopened by user", id);
         return topicMapper.toResponseDTO(topicRepository.save(topic));
     }
 
@@ -94,11 +129,25 @@ public class TopicService {
         
         securityService.validateOwnerOrModerator(topic.getAuthor());
         
+        // 1. Audit and delete answers before topic deletion
+        var answers = answerRepository.findAllByTopicId(topic.getId());
+        for (var answer : answers) {
+            String answerLog = String.format("Message: %s | Author: %s | TopicId: %s", 
+                    answer.getMessage(), answer.getAuthor().getEmail(), topic.getId().toString());
+            auditLogService.logAction("DELETE", "ANSWER", answer.getId(), answerLog, "Cascade delete from topic: " + topic.getTitle());
+            
+            // Explicitly delete answer to clear Hibernate session state
+            answerRepository.delete(answer);
+        }
+
+        // 2. Audit topic
         String logContent = String.format("Title: %s | Message: %s | Author: %s | CourseId: %s", 
                 topic.getTitle(), topic.getMessage(), topic.getAuthor().getEmail(), topic.getCourse().getId().toString());
         
         auditLogService.logAction("DELETE", "TOPIC", topic.getId(), logContent, justification);
         
+        // Ensure changes are flushed before final delete if necessary, 
+        // but topicRepository.delete(topic) will handle it.
         topicRepository.delete(topic);
     }
 }

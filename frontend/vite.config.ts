@@ -12,7 +12,12 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     globals: true,
-    setupFiles: ['./src/test/setup.ts']
+    setupFiles: ['./src/test/setup.ts'],
+    server: {
+      deps: {
+        inline: ['vuetify']
+      }
+    }
   },
   server: {
     port: 3000,

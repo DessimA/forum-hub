@@ -27,6 +27,8 @@ public class UserService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuditLogService auditLogService;
+    private final com.forumhub.modules.topic.service.TopicService topicService;
+    private final com.forumhub.modules.answer.service.AnswerService answerService;
 
     @Transactional
     public UserResponseDTO updateProfile(User user, UserUpdateDTO dto) {
@@ -86,6 +88,17 @@ public class UserService {
             auditLogService.logAction("TEMPORARY_BLOCK", "USER", id, "Days: " + dto.days(), justification);
         }
         userRepository.save(user);
+
+        // Automatic content cleanup based on context
+        if (dto.topicId() != null) {
+            log.info("Automatically deleting topic {} due to author punishment", dto.topicId());
+            topicService.delete(dto.topicId(), "Author punished: " + justification);
+        }
+        
+        if (dto.answerId() != null) {
+            log.info("Automatically deleting answer {} due to author punishment", dto.answerId());
+            answerService.delete(dto.answerId(), "Author punished: " + justification);
+        }
     }
 
     @Transactional
@@ -109,7 +122,9 @@ public class UserService {
                 user.getName(),
                 user.getEmail(),
                 user.getProfile() != null ? user.getProfile().getName() : "ROLE_USER",
-                user.getCreatedAt()
+                user.getCreatedAt(),
+                user.getIsPermanentBlocked(),
+                user.getBlockedUntil()
         );
     }
 }

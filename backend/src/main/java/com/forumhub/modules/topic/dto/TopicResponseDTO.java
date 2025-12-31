@@ -13,5 +13,6 @@ public record TopicResponseDTO(
     String author,
     UUID authorId,
     String authorEmail,
-    String course
+    String course,
+    UUID courseId
 ) {}

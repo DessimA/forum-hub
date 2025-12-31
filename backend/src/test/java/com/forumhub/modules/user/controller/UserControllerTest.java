@@ -60,9 +60,9 @@ class UserControllerTest {
     @WithMockUser(roles = "ADMIN")
     void shouldBlockUserForAdmin() throws Exception {
         UUID id = UUID.randomUUID();
-        var dto = new UserController.BlockRequestDTO(true, 0, "Violation of rules");
+        var dto = new UserController.BlockRequestDTO(true, 0, "Violation of rules", null, null);
         var mockTarget = User.builder().id(id).email("target@test.com").profile(new Profile(UUID.randomUUID(), "ROLE_USER")).build();
-        var mockResponse = new UserResponseDTO(id, "Target", "target@test.com", "ROLE_USER", LocalDateTime.now());
+        var mockResponse = new UserResponseDTO(id, "Target", "target@test.com", "ROLE_USER", LocalDateTime.now(), false, null);
 
         when(securityService.isResourceOwner(id)).thenReturn(false);
         when(service.findById(id)).thenReturn(mockTarget);

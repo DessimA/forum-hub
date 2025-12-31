@@ -42,7 +42,7 @@ class TopicControllerTest {
         UUID courseId = UUID.randomUUID();
         UUID topicId = UUID.randomUUID();
         var dto = new TopicRequestDTO("Java", "Message", courseId);
-        var response = new TopicResponseDTO(topicId, "Java", "Message", LocalDateTime.now(), TopicStatus.OPEN, "Author", UUID.randomUUID(), "a@t.com", "Course");
+        var response = new TopicResponseDTO(topicId, "Java", "Message", LocalDateTime.now(), TopicStatus.OPEN, "Author", UUID.randomUUID(), "a@t.com", "Course", courseId);
         
         when(service.create(any())).thenReturn(response);
 
@@ -57,7 +57,8 @@ class TopicControllerTest {
     @WithMockUser(roles = "USER")
     void shouldGetDetail() throws Exception {
         UUID topicId = UUID.randomUUID();
-        var detail = new TopicDetailResponseDTO(topicId, "T", "M", LocalDateTime.now(), TopicStatus.OPEN, "A", UUID.randomUUID(), "e", "C", Collections.emptyList());
+        UUID courseId = UUID.randomUUID();
+        var detail = new TopicDetailResponseDTO(topicId, "T", "M", LocalDateTime.now(), TopicStatus.OPEN, "A", UUID.randomUUID(), "e", "C", courseId, false, null, Collections.emptyList());
         
         when(service.getDetail(topicId)).thenReturn(detail);
 

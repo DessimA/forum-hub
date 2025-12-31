@@ -4,6 +4,6 @@ import com.forumhub.modules.topic.model.Topic;
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.UUID;
 
-public interface TopicRepository extends JpaRepository<Topic, UUID> {
+public interface TopicRepository extends JpaRepository<Topic, UUID>, org.springframework.data.jpa.repository.JpaSpecificationExecutor<Topic> {
     boolean existsByTitleAndMessage(String title, String message);
 }

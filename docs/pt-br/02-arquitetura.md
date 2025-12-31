@@ -40,47 +40,71 @@ graph TD
 - **Decisão:** Uso do Flyway para gerenciar o esquema do banco.
 - **Motivação:** Garante que o estado do banco de dados seja reprodutível em qualquer ambiente (Dev, Test, Prod) e evita conflitos de alterações manuais SQL.
 
+### 4. Uso de UUIDs Determinísticos (BINARY 16)
+- **Decisão:** Utilizar `BINARY(16)` para todos os IDs primários.
+- **Estratégia:** Diferente do `VARCHAR(36)`, o `BINARY(16)` ocupa menos espaço em disco e melhora a performance dos índices. O uso de UUIDs previne o "ID Enumeration Attack", onde atacantes poderiam prever IDs sequenciais para minerar dados.
+
 ---
 
-## 🔌 Fluxo de Dados Real
+## 🛡️ Padrões de Segurança Proativa
 
-O diagrama abaixo ilustra o fluxo exato de uma requisição de criação de tópico, conforme implementado no `TopicService`:
+### Defesa em Camadas (Defense in Depth)
+O sistema não confia apenas na assinatura do JWT. Em cada requisição protegida, o `SecurityValidationService` realiza uma consulta rápida ao banco de dados para verificar se a conta do usuário foi suspensa ou banida **após** a emissão do token, garantindo que usuários punidos percam o acesso em tempo real.
 
+### Hierarquia de Moderação
+A lógica de permissões é codificada para proteger o sistema contra abusos:
+- Admins podem gerenciar todos.
+- Moderadores podem gerenciar usuários comuns, mas o sistema bloqueia tentativas de ação contra Administradores ou outros Moderadores de mesmo nível.
+
+---
+
+## 🔌 Fluxos de Dados Críticos
+
+### 1. Criação de Tópico (Simplificado)
 ```mermaid
 sequenceDiagram
     participant User
     participant Filter as SecurityFilter
     participant API as TopicController
     participant Service as TopicService
-    participant Validator as ValidationService
     participant DB as MySQL
 
     User->>Filter: POST /topics (Bearer Token)
     Filter->>Filter: Valida Token & Seta User Context
     Filter->>API: Repassa Requisição
-
-    activate API
-    API->>API: @Valid (Bean Validation)
     API->>Service: create(dto)
-    
-    activate Service
-    Service->>Service: SecurityService.getCurrentUser()
-    Service->>Validator: validateNotDuplicate(title, msg)
-    Validator->>DB: count(title, msg)
-    DB-->>Validator: 0
-    
-    Service->>DB: CourseRepository.findById(courseId)
-    DB-->>Service: Course Entity
-    
-    Service->>Service: Mapper.toEntity(dto)
     Service->>DB: TopicRepository.save(topic)
     DB-->>Service: Topic Saved (UUID)
-    
     Service-->>API: TopicResponseDTO
-    deactivate Service
+    API-->>User: 201 Created
+```
+
+### 2. Moderação Contextual (Punição + Remoção)
+Este fluxo ilustra a inteligência de limpeza automática ao punir um usuário:
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant UserAPI as UserController
+    participant UserSvc as UserService
+    participant ContentSvc as Topic/AnswerService
+    participant Audit as AuditLogService
+    participant DB as MySQL
+
+    Admin->>UserAPI: POST /users/{id}/block (topicId included)
+    UserAPI->>UserSvc: block(id, dto)
     
-    API-->>User: 201 Created (Location Header)
-    deactivate API
+    activate UserSvc
+    UserSvc->>DB: Altera status do Usuário (Blocked)
+    UserSvc->>Audit: logAction("PERMANENT_BLOCK", user)
+    
+    Note over UserSvc, ContentSvc: Se topicId estiver presente:
+    UserSvc->>ContentSvc: delete(topicId, "Author punished")
+    ContentSvc->>Audit: logAction("DELETE", "TOPIC", backup_content)
+    ContentSvc->>DB: Remove Tópico e Respostas (Cascade)
+    deactivate UserSvc
+    
+    UserAPI-->>Admin: 200 OK (Usuário punido e conteúdo limpo)
 ```
 
 ---

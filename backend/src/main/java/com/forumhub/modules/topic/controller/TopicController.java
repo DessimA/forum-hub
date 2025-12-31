@@ -33,9 +33,14 @@ public class TopicController {
     }
 
     @GetMapping
-    @Operation(summary = "List all topics with pagination")
-    public ResponseEntity<Page<TopicResponseDTO>> list(@PageableDefault(size = 10) Pageable pageable) {
-        return ResponseEntity.ok(service.list(pageable));
+    @Operation(summary = "List all topics with pagination and filters")
+    public ResponseEntity<Page<TopicResponseDTO>> list(
+            @PageableDefault(size = 10, sort = "createdAt", direction = org.springframework.data.domain.Sort.Direction.DESC) org.springframework.data.domain.Pageable pageable,
+            @RequestParam(required = false) java.util.UUID courseId,
+            @RequestParam(required = false) com.forumhub.modules.topic.model.TopicStatus status,
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) String title) {
+        return ResponseEntity.ok(service.list(pageable, courseId, status, year, title));
     }
 
     @GetMapping("/{id}")
@@ -48,6 +53,18 @@ public class TopicController {
     @Operation(summary = "Update a topic")
     public ResponseEntity<TopicResponseDTO> update(@PathVariable UUID id, @RequestBody @Valid TopicUpdateDTO dto) {
         return ResponseEntity.ok(service.update(id, dto));
+    }
+
+    @PatchMapping("/{id}/close")
+    @Operation(summary = "Close a topic (Author or Moderator only)")
+    public ResponseEntity<TopicResponseDTO> close(@PathVariable UUID id) {
+        return ResponseEntity.ok(service.close(id));
+    }
+
+    @PatchMapping("/{id}/reopen")
+    @Operation(summary = "Reopen a closed topic (Author or Moderator only)")
+    public ResponseEntity<TopicResponseDTO> reopen(@PathVariable UUID id) {
+        return ResponseEntity.ok(service.reopen(id));
     }
 
     @DeleteMapping("/{id}")

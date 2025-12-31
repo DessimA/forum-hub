@@ -1,36 +1,21 @@
-# 11 - Análise de Integração Backend/Frontend
+# 09 - Padrões de Integração Backend/Frontend
 
-Este documento detalha as funcionalidades expostas pelo Backend que estão sendo subutilizadas ou ignoradas pela interface atual do Frontend, representando oportunidades de melhoria de UX sem custo de desenvolvimento de API.
+Este documento descreve como o Frontend consome de forma plena os recursos avançados do Backend para entregar uma UX superior.
 
-## 🔍 Oportunidades de Otimização
+## 🔗 Consumo Inteligente de APIs
 
-### 1. Filtragem e Busca de Tópicos (Crítico)
-- **Backend:** Possui estrutura de banco otimizada com índices em `status`, `course_id` e `author_id`. Suporta consultas eficientes.
-- **Frontend Atual:** Exibe uma lista única paginada, sem opções de filtro.
-- **Potencial Inexplorado:**
-  - **Filtro por Curso:** O usuário não consegue ver apenas dúvidas de "Java" ou "Vue.js", embora o endpoint de listagem de cursos exista e os tópicos tenham essa relação.
-  - **Filtro por Status:** Não há como ver apenas tópicos "Não Resolvidos", dificultando para instrutores encontrarem onde ajudar.
-  - **Busca Textual:** O banco suporta `LIKE` no título, mas não há barra de busca na UI.
+### 1. Filtragem Dinâmica (Implementado)
+O Frontend consome o endpoint `GET /topics` passando parâmetros de filtragem complexos (`courseId`, `status`, `year`, `title`).
+- **Lógica:** A Store centraliza esses parâmetros, permitindo que a paginação funcione de forma "reagente" aos filtros aplicados na barra de busca.
 
-### 2. Ordenação Dinâmica
-- **Backend:** Suporte nativo do Spring Data Pageable para parâmetros `?sort=field,desc`.
-- **Frontend Atual:** Ordem fixa (provavelmente inserção).
-- **Potencial Inexplorado:**
-  - Adicionar dropdown: "Mais Recentes", "Antigos", "Por Status".
-  - Permitir que o usuário controle a relevância do conteúdo.
+### 2. Sincronização de Estado de Bloqueio (Implementado)
+As respostas de detalhe do tópico (`TopicDetailResponseDTO`) incluem o status atualizado do autor (`authorIsBlocked`).
+- **Efeito UX:** Se o autor estiver punido, a interface exibe um indicador visual imediato e oferece ao moderador o botão de "Remover Punição" diretamente na tela de leitura.
 
-### 3. Feedback de Validação e UX
-- **Backend:** Possui validações ricas (`@NotBlank`, validação de duplicidade, regras de hierarquia de roles).
-- **Frontend Atual:** Utiliza `alert()` e `prompt()` nativos do navegador para ações críticas (ex: Bloqueio de usuário, Exclusão de log).
-- **Potencial Inexplorado:**
-  - Substituir `prompt` por Dialogs do Vuetify (`v-dialog`) para capturar justificativas de forma elegante.
-  - Exibir erros de validação do Backend (ex: "Tópico duplicado") diretamente nos campos do formulário (`v-text-field :error-messages`) em vez de alertas genéricos.
+### 3. Moderação com Remoção Contextual (Implementado)
+O sistema de bloqueio foi integrado à estrutura de dados do fórum.
+- **Fluxo:** Ao aplicar uma punição através de um tópico, o ID do recurso é enviado no `BlockRequestDTO`, disparando a exclusão automática e o backup do conteúdo ofensivo no Backend.
 
-### 4. Gestão de Bloqueios (Moderador)
-- **Backend:** Permite bloqueio temporário com data de expiração exata.
-- **Frontend Atual:** Pede "dias" via prompt simples.
-- **Potencial Inexplorado:**
-  - Interface com `Date Picker` para selecionar a data exata de desbloqueio, aproveitando o campo `blocked_until` do banco.
-
-## 🎯 Recomendação Imediata
-Priorizar a implementação da **Barra de Filtros na Listagem de Tópicos** (`TopicListView`). Isso aumentará drasticamente a usabilidade do sistema utilizando endpoints que já existem e estão testados.
+### 4. Ciclo de Vida Reativo (Implementado)
+A interface reage ao status do tópico (`OPEN`, `CLOSED`, `RESOLVED`).
+- **Bloqueio de Escrita:** O campo de resposta é automaticamente substituído por um alerta informativo quando o tópico não aceita mais interações, prevenindo erros de submissão antes mesmo que o usuário tente enviar.

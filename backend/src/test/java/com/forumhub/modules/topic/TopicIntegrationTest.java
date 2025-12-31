@@ -72,7 +72,7 @@ class TopicIntegrationTest {
     @WithMockUser(username = "author@topic.com", roles = "USER")
     void shouldUpdateTopic() throws Exception {
         var topic = topicRepository.save(Topic.builder().title("Old").message("Old").author(author).course(course).build());
-        var dto = new TopicUpdateDTO("New Title", "New Msg");
+        var dto = new TopicUpdateDTO("New Title", "New Msg", null);
 
         mockMvc.perform(put("/api/v1/topics/" + topic.getId())
                         .contentType(MediaType.APPLICATION_JSON)

@@ -48,11 +48,13 @@ describe('Auth Store', () => {
   it('should clear token on logout', () => {
     const store = useAuthStore()
     store.token = 'some-token'
+    window.localStorage.setItem('token', 'some-token')
     
     store.logout()
 
     expect(store.token).toBe('')
     expect(window.localStorage.getItem('token')).toBeNull()
+    expect(store.isAuthenticated).toBe(false)
   })
 
   it('should correctly identify admin role', () => {

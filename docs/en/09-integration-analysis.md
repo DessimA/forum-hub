@@ -1,36 +1,21 @@
-# 11 - Backend/Frontend Integration Analysis
+# 09 - Backend/Frontend Integration Patterns
 
-This document details Backend functionalities that are currently underutilized or ignored by the Frontend interface, representing UX improvement opportunities with zero API development cost.
+This document describes how the Frontend fully leverages the Backend's advanced features to deliver a superior UX.
 
-## 🔍 Optimization Opportunities
+## 🔗 Intelligent API Consumption
 
-### 1. Topic Filtering and Search (Critical)
-- **Backend:** Optimized database structure with indexes on `status`, `course_id`, and `author_id`. Supports efficient queries.
-- **Current Frontend:** Displays a single paginated list with no filter options.
-- **Untapped Potential:**
-  - **Course Filter:** Users cannot view only "Java" or "Vue.js" questions, even though the course listing endpoint exists.
-  - **Status Filter:** No way to see only "Unresolved" topics, making it hard for instructors to find where to help.
-  - **Text Search:** Database supports `LIKE` on title, but there is no search bar in the UI.
+### 1. Dynamic Filtering (Implemented)
+The Frontend consumes the `GET /topics` endpoint by passing complex filtering parameters (`courseId`, `status`, `year`, `title`).
+- **Logic:** The Store centralizes these parameters, allowing pagination to work "reactively" to filters applied in the search bar.
 
-### 2. Dynamic Sorting
-- **Backend:** Native Spring Data Pageable support for `?sort=field,desc` parameters.
-- **Current Frontend:** Fixed order (likely insertion).
-- **Untapped Potential:**
-  - Add dropdown: "Newest", "Oldest", "By Status".
-  - Allow users to control content relevance.
+### 2. Blocking State Synchronization (Implemented)
+Topic detail responses (`TopicDetailResponseDTO`) include the updated author status (`authorIsBlocked`).
+- **UX Effect:** If the author is punished, the interface displays an immediate visual indicator and offers the moderator a "Remove Punishment" button directly on the topic screen.
 
-### 3. Validation Feedback and UX
-- **Backend:** Rich validation (`@NotBlank`, duplication check, role hierarchy rules).
-- **Current Frontend:** Uses native browser `alert()` and `prompt()` for critical actions (e.g., User blocking, Log deletion).
-- **Untapped Potential:**
-  - Replace `prompt` with Vuetify Dialogs (`v-dialog`) for elegant justification capture.
-  - Display Backend validation errors (e.g., "Duplicate topic") directly on form fields (`v-text-field :error-messages`) instead of generic alerts.
+### 3. Moderation with Contextual Removal (Implemented)
+The blocking system is integrated into the forum's data structure.
+- **Workflow:** When applying a punishment through a topic, the resource ID is sent in the `BlockRequestDTO`, triggering automatic deletion and backup of offensive content in the Backend.
 
-### 4. Blocking Management (Moderator)
-- **Backend:** Allows temporary blocking with exact expiration date.
-- **Current Frontend:** Asks for "days" via simple prompt.
-- **Untapped Potential:**
-  - Interface with `Date Picker` to select the exact unblock date, leveraging the `blocked_until` database field.
-
-## 🎯 Immediate Recommendation
-Prioritize implementing the **Filter Bar in Topic Listing** (`TopicListView`). This will drastically increase system usability using endpoints that already exist and are tested.
+### 4. Reactive Lifecycle (Implemented)
+The UI reacts to topic status (`OPEN`, `CLOSED`, `RESOLVED`).
+- **Write Lock:** The reply field is automatically replaced by an informative alert when the topic no longer accepts interactions, preventing submission errors before the user even tries to send.

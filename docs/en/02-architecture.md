@@ -40,6 +40,22 @@ graph TD
 - **Decision:** Use Flyway to manage database schema.
 - **Motivation:** Ensures database state is reproducible in any environment (Dev, Test, Prod) and avoids manual SQL conflicts.
 
+### 4. Deterministic UUIDs (BINARY 16)
+- **Decision:** Use `BINARY(16)` for all primary IDs.
+- **Strategy:** Unlike `VARCHAR(36)`, `BINARY(16)` uses less disk space and improves index performance. Using UUIDs prevents "ID Enumeration Attacks", where attackers could predict sequential IDs to mine data.
+
+---
+
+## 🛡️ Proactive Security Patterns
+
+### Defense in Depth
+The system does not rely solely on JWT signature. For every protected request, the `SecurityValidationService` performs a quick database lookup to verify if the user's account was suspended or banned **after** the token was issued, ensuring punished users lose access in real-time.
+
+### Moderation Hierarchy
+Permission logic is hardcoded to protect the system from abuse:
+- Admins can manage everyone.
+- Moderators can manage regular users, but the system blocks actions against Administrators or other Moderators of the same level.
+
 ---
 
 ## 🔌 Real Data Flow
