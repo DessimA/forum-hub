@@ -1,47 +1,19 @@
-# 01 - Introdução ao FórumHub
+# 01 - Introdução
 
-## 📖 Sobre o Projeto
-O **FórumHub** é uma plataforma de fórum educacional de alto desempenho e segurança proativa. O sistema permite uma interação fluida entre alunos e instrutores, com foco total na rastreabilidade de ações e integridade dos dados.
+O **FórumHub** é uma aplicação Full Stack projetada como um desafio de backend para simular o comportamento de um fórum de discussões (como o da Alura). O projeto foca em **Segurança Proativa**, **Arquitetura Limpa** e **Experiência do Desenvolvedor (DX)**.
 
-O projeto utiliza uma arquitetura de **Monólito Modular**, garantindo que a lógica de negócio seja isolada e fácil de manter, enquanto a interface entrega uma experiência de usuário moderna e responsiva.
+## 🎯 Objetivo
+Oferecer uma plataforma estável e segura onde usuários podem criar tópicos, responder dúvidas e moderadores podem manter a integridade da comunidade através de ferramentas avançadas de auditoria.
 
----
+## 🚀 Principais Tecnologias
+- **Backend:** Java 17 com Spring Boot 3.4.
+- **Frontend:** Vue.js 3 com Vuetify 3.
+- **Banco de Dados:** MySQL 8.4 com Flyway Migrations.
+- **Segurança:** Spring Security + JWT.
+- **Infraestrutura:** Docker & Docker Compose.
 
-## 📂 Estrutura de Diretórios
-Organização oficial do repositório:
-
-```text
-forum-hub/
-├── automation/             # Scripts públicos de execução e testes
-│   ├── run.sh              # CLI Manager para Docker (Menu interativo)
-│   └── test.sh             # Runner unificado de testes (Maven + Vitest)
-│
-├── backend/                # API REST Spring Boot 3.4.1
-│   ├── src/main/java/com/forumhub/
-│   │   ├── modules/        # Domínios (User, Topic, Course, Answer, Audit)
-│   │   ├── security/       # Defesa em profundidade e JWT
-│   │   └── exception/      # Tratamento global de erros (Business & Integrity)
-│   └── src/main/resources/db/migration # Versionamento Flyway
-│
-├── frontend/               # SPA Vue.js 3.5 + Vuetify 3.11
-│   ├── src/
-│   │   ├── stores/         # Pinia (Estado global de busca e auth)
-│   │   ├── views/          # Interfaces baseadas em Diálogos
-│   │   └── services/       # Cliente API Axios
-│   └── vite.config.ts      # Configuração de build e Vitest 4
-│
-└── infra/                  # Infraestrutura (Docker & Nginx)
-```
-
----
-
-## 🚀 Funcionalidades Principais (Estado Atual)
-
-| Módulo | Funcionalidade | Descrição |
-| :--- | :--- | :--- |
-| **Busca Avançada** | Filtros & Sort | Busca por título, curso, status e ano com ordenação dinâmica. |
-| **Ciclo de Vida** | Lock/Unlock | Autores e Moderadores podem fechar e reabrir discussões. |
-| **Moderação** | Auto-Cleanup | Punições a usuários removem automaticamente o conteúdo ofensivo. |
-| **Segurança** | Real-time Check | Verificação de bloqueio em tempo real a cada requisição API. |
-| **Auditoria** | Restore Total | Recuperação de tópicos e respostas preservando UUIDs originais. |
-| **Interface** | Modern UX | Sistema 100% baseado em Diálogos e Snackbars do Vuetify. |
+## 🌟 Diferenciais
+1. **Auditoria Completa:** Cada exclusão gera um log que permite a restauração total do recurso, incluindo seu UUID original.
+2. **Segurança Proativa:** Verificação de bloqueio em tempo real, invalidando tokens de usuários punidos instantaneamente.
+3. **i18n Nativo:** Backend preparado para responder em múltiplos idiomas.
+4. **Build Otimizado:** Frontend configurado para máxima performance de carregamento.

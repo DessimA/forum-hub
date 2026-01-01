@@ -1,41 +1,36 @@
-# 10 - Improvement Roadmap & Technical Debt
+# 08 - Future Improvements Roadmap
 
-This document lists improvement points identified within the current project scope, aiming to consolidate ForumHub's quality, security, and maintainability.
+This document lists the features and refinements planned for ForumHub that have not yet been implemented.
 
-## 🚨 High Priority (Security & Stability)
+## 🚀 Future Roadmap (Technical Debt & Innovation)
 
-### 1. Secrets Management
-- **Issue:** Currently, secrets like `API_SECURITY_TOKEN_SECRET` and database passwords are hardcoded in `docker-compose.yml`.
-- **Solution:** Implement environment variable reading (`.env`) which are not versioned.
-- **Impact:** Prevents credential leakage in public repositories.
+### High Priority
 
-### 2. Pagination Serialization (Spring Data)
-- **Issue:** Logs indicate a warning about unstable `PageImpl` serialization (`Serializing PageImpl instances as-is is not supported`).
-- **Solution:** Configure `@EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO)` or migrate to Spring HATEOAS `PagedModel`.
-- **Impact:** Ensures stable JSON structure for paginated lists consumed by the frontend.
+1. **Rate Limiting (Brute-Force Protection)**
+   - **Goal:** Implement request limiting per IP, especially on authentication endpoints (`/auth/login`), using Bucket4j or Redis.
+   - **Current State:** Absent. The API is vulnerable to massive dictionary attacks.
 
-## 🛠️ Medium Priority (Maintainability & DX)
+2. **Frontend Internationalization (Vue-i18n)**
+   - **Goal:** Allow the user interface (buttons, menus, labels) to switch languages dynamically between PT-BR and EN.
+   - **Current State:** Interface has hardcoded Portuguese texts.
 
-### 3. API Documentation (Swagger/OpenAPI)
-- **Issue:** DTOs (`TopicRequestDTO`, etc.) lack `@Schema` annotations.
-- **Solution:** Add descriptions and examples to DTO fields.
-- **Impact:** Improves Swagger UI usability for frontend developers and third parties.
+### Medium Priority
 
-### 4. Internationalization (i18n)
-- **Issue:** Backend error messages (`GlobalExceptionHandler`) and Frontend texts are hardcoded in Portuguese.
-- **Solution:**
-  - **Backend:** Implement `MessageSource` with `.properties` files (messages_pt.properties, messages_en.properties).
-  - **Frontend:** Implement `vue-i18n`.
-- **Impact:** Allows the system to serve global users, aligning with the bilingual documentation.
+3. **Structured Logging (JSON)**
+   - **Goal:** Configure Logback to output logs in JSON format in production environments.
+   - **Motivation:** Facilitates ingestion and analysis in observability tools (ELK Stack, Datadog, CloudWatch).
+   - **Current State:** Standard plain text logs (Console).
 
-## ⚡ Low Priority (Optimization)
+4. **RFC 7807 Standardization (Problem Details)**
+   - **Goal:** Adopt the official "Problem Details for HTTP APIs" standard for error responses.
+   - **Current State:** Custom error format.
 
-### 5. Frontend Build Optimization
-- **Issue:** Vite build warns about chunks larger than 500kB.
-- **Solution:** Configure `rollupOptions` in `vite.config.ts` to split vendor chunks (separate `vuetify` and `vue` from the main bundle).
-- **Impact:** Improves initial application load time.
+### Low Priority
 
-### 6. Error Handling Standardization (RFC 7807)
-- **Issue:** Current error format is custom.
-- **Solution:** Adopt **Problem Details for HTTP APIs (RFC 7807)** standard.
-- **Impact:** Increases interoperability with standard HTTP clients.
+5. **Second Level Cache (L2 Cache)**
+   - **Goal:** Implement cache for non-volatile entities (e.g., `Course`, `Profile`) using Caffeine or Redis.
+   - **Motivation:** Reduce database load on frequent listings.
+
+6. **CI/CD Pipeline (GitHub Actions)**
+   - **Goal:** Automate tests and build on every push.
+   - **Current State:** Manual scripts (`run.sh`).

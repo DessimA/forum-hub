@@ -1,0 +1,18 @@
+# Configurações de Segurança para Produção
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+spring:
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: validate
+
+# Ocultar detalhes de erro para o usuário final em produção
+management:
+  endpoint:
+    health:
+      show-details: when_authorized

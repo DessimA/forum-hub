@@ -27,14 +27,17 @@ clear
 header
 echo -e "${YELLOW}Preparando ambiente de testes no Docker...${NC}"
 
+# Carregar variáveis do .env da raiz do projeto para garantir consistência
+ENV_FILE="$PROJECT_ROOT/.env"
+
 # Backend Tests (H2)
 echo -e "\n${BLUE}>> Executando testes do BACKEND...${NC}"
-$DOCKER_CMD -f "$COMPOSE_FILE" -f "$TEST_COMPOSE_FILE" run --build --rm backend-test mvn -B -ntp -q test
+$DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$TEST_COMPOSE_FILE" run --build --rm backend-test mvn -B -ntp -q test
 BACKEND_EXIT=$?
 
 # Frontend Tests
 echo -e "\n${BLUE}>> Executando testes do FRONTEND...${NC}"
-$DOCKER_CMD -f "$COMPOSE_FILE" -f "$TEST_COMPOSE_FILE" run --build --rm frontend-test npm run test:unit -- --run --reporter=dot --silent
+$DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$TEST_COMPOSE_FILE" run --build --rm frontend-test npm run test:unit -- --run --reporter=dot --silent
 FRONTEND_EXIT=$?
 
 echo -e "\n${BLUE}=======================================${NC}"

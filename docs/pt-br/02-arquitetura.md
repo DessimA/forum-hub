@@ -1,27 +1,100 @@
 # 02 - Arquitetura de Software
 
-Este documento detalha as decisões arquiteturais, o design do sistema e os padrões adotados no **FórumHub**.
+Este documento detalha as decisões arquiteturais, o design do sistema e os padrões adotados no **FórumHub**. A aplicação segue os princípios de **Clean Code**, **SOLID** e utiliza uma arquitetura de **Monólito Modular** para garantir organização e escalabilidade sem a complexidade prematura de microsserviços.
 
 ## 🏗️ Visão Geral (C4 Model)
 
-O FórumHub segue uma arquitetura de **Monólito Modular** (Modular Monolith), separando claramente o Frontend (SPA) do Backend (API REST), mas mantendo a simplicidade de implantação.
+O FórumHub separa claramente o Frontend (SPA) do Backend (API REST), comunicando-se exclusivamente via JSON.
 
-### Diagrama de Container
+### Diagrama de Container (C4 Level 2)
 
 ```mermaid
 graph TD
-    User("👤 Usuário<br/>(Aluno ou Instrutor)")
-
-    subgraph ForumHub [FórumHub System]
-        direction TB
-        SPA("🖥️ Single Page Application<br/>(Vue.js 3 + Vite)")
-        API("⚙️ API Application<br/>(Java 17 + Spring Boot 3)")
-        DB[("🗄️ Database<br/>(MySQL 8)")]
+    User("👤 Usuário<br/>(Browser/Mobile)")
+    
+    subgraph "Docker Host"
+        Nginx("🌐 Nginx Proxy<br/>(Port 80/443)")
+        
+        subgraph "Frontend Container"
+            VueApp("🖥️ Vue.js SPA<br/>(Vite Optimized)")
+        end
+        
+        subgraph "Backend Container"
+            SpringBoot("⚙️ Spring Boot API<br/>(Port 8080)")
+        end
+        
+        subgraph "Data Container"
+            MySQL("🗄️ MySQL 8.4<br/>(Port 3306)")
+        end
     end
 
-    User -->|Usa HTTPS| SPA
-    SPA -->|JSON/HTTPS| API
-    API -->|JDBC| DB
+    User -->|HTTPS Request| Nginx
+    Nginx -->|Serve Static| VueApp
+    Nginx -->|Proxy /api| SpringBoot
+    SpringBoot -->|JPA/Hibernate| MySQL
+```
+
+### Arquitetura Interna do Backend (Modular Monolith)
+
+O backend é dividido em módulos de domínio independentes, reduzindo o acoplamento e facilitando a manutenção.
+
+```mermaid
+graph TD
+    subgraph "API Layer (Controllers)"
+        AuthController
+        TopicController
+        AnswerController
+        CourseController
+        UserController
+        AuditController
+    end
+
+    subgraph "Core Modules (Service/Domain)"
+        Auth[Auth Module]
+        Topic[Topic Module]
+        Answer[Answer Module]
+        Course[Course Module]
+        User[User Module]
+        Audit[Audit Module]
+    end
+
+    subgraph "Infrastructure"
+        Security["Spring Security / JWT"]
+        Docs["SpringDoc OpenAPI"]
+        I18n["MessageSource (EN/PT-BR)"]
+        DB["MySQL Database"]
+    end
+
+    AuthController --> Auth
+    TopicController --> Topic
+    AnswerController --> Answer
+    CourseController --> Course
+    UserController --> User
+    AuditController --> Audit
+
+    Auth --> User
+    Topic --> Course
+    Topic --> User
+    Answer --> Topic
+    Answer --> User
+    
+    Auth --> Security
+    Topic --> Security
+    Answer --> Security
+    User --> Security
+    
+    Auth --> DB
+    Topic --> DB
+    Answer --> DB
+    Course --> DB
+    User --> DB
+    Audit --> DB
+
+    Auth --> I18n
+    Topic --> I18n
+    
+    AuthController --> Docs
+    TopicController --> Docs
 ```
 
 ---
@@ -30,81 +103,56 @@ graph TD
 
 ### 1. Separação Frontend-Backend (Decoupled Architecture)
 - **Decisão:** Separar a UI (Vue.js) da Lógica de Negócio (Spring Boot).
-- **Motivação:** Permite o desenvolvimento independente das equipes, facilita a escalabilidade horizontal do backend e possibilita a criação futura de outros clientes (ex: App Mobile) consumindo a mesma API.
+- **Status:** Implementado.
+- **Motivação:** Permite o desenvolvimento independente das equipes e facilita a escalabilidade horizontal do backend.
 
 ### 2. Autenticação Stateless (JWT)
 - **Decisão:** Uso de JSON Web Tokens (JWT) para autenticação.
-- **Motivação:** Elimina a necessidade de sincronização de sessão no servidor (stateless), o que é ideal para ambientes conteinerizados e escaláveis.
+- **Status:** Implementado e Documentado com Swagger.
+- **Detalhe:** Implementado suporte a **Bearer Auth** no Swagger UI, permitindo testes protegidos diretamente no navegador.
 
-### 3. Migração de Banco de Dados Versionada (Flyway)
-- **Decisão:** Uso do Flyway para gerenciar o esquema do banco.
-- **Motivação:** Garante que o estado do banco de dados seja reprodutível em qualquer ambiente (Dev, Test, Prod) e evita conflitos de alterações manuais SQL.
+### 3. Migração de Banco de Dados (Flyway)
+- **Decisão:** Uso do Flyway para gerenciar o esquema do banco de forma versionada.
+- **Status:** Implementado (V1 a V5).
 
-### 4. Uso de UUIDs Determinísticos (BINARY 16)
+### 4. Uso de UUIDs Determinísticos
 - **Decisão:** Utilizar `BINARY(16)` para todos os IDs primários.
-- **Estratégia:** Diferente do `VARCHAR(36)`, o `BINARY(16)` ocupa menos espaço em disco e melhora a performance dos índices. O uso de UUIDs previne o "ID Enumeration Attack", onde atacantes poderiam prever IDs sequenciais para minerar dados.
+- **Motivação:** Performance superior a `VARCHAR(36)` e prevenção contra ataques de enumeração de IDs.
 
----
-
-## 🛡️ Padrões de Segurança Proativa
-
-### Defesa em Camadas (Defense in Depth)
-O sistema não confia apenas na assinatura do JWT. Em cada requisição protegida, o `SecurityValidationService` realiza uma consulta rápida ao banco de dados para verificar se a conta do usuário foi suspensa ou banida **após** a emissão do token, garantindo que usuários punidos percam o acesso em tempo real.
-
-### Hierarquia de Moderação
-A lógica de permissões é codificada para proteger o sistema contra abusos:
-- Admins podem gerenciar todos.
-- Moderadores podem gerenciar usuários comuns, mas o sistema bloqueia tentativas de ação contra Administradores ou outros Moderadores de mesmo nível.
+### 5. Internacionalização (i18n)
+- **Decisão:** Backend responde mensagens de erro baseadas no header `Accept-Language`.
+- **Status:** Implementado (Arquivos `messages_en.properties` e `messages_pt_BR.properties`).
+- **Motivação:** Suporte global para a API, desacoplando as mensagens de erro do código fonte.
 
 ---
 
 ## 🔌 Fluxos de Dados Críticos
 
-### 1. Criação de Tópico (Simplificado)
+### 1. Criação de Tópico Seguro
+Este fluxo demonstra a validação de segurança e a persistência.
+
 ```mermaid
 sequenceDiagram
-    participant User
+    participant Client as Frontend/Swagger
     participant Filter as SecurityFilter
     participant API as TopicController
     participant Service as TopicService
     participant DB as MySQL
 
-    User->>Filter: POST /topics (Bearer Token)
-    Filter->>Filter: Valida Token & Seta User Context
-    Filter->>API: Repassa Requisição
-    API->>Service: create(dto)
-    Service->>DB: TopicRepository.save(topic)
-    DB-->>Service: Topic Saved (UUID)
-    Service-->>API: TopicResponseDTO
-    API-->>User: 201 Created
-```
-
-### 2. Moderação Contextual (Punição + Remoção)
-Este fluxo ilustra a inteligência de limpeza automática ao punir um usuário:
-
-```mermaid
-sequenceDiagram
-    participant Admin
-    participant UserAPI as UserController
-    participant UserSvc as UserService
-    participant ContentSvc as Topic/AnswerService
-    participant Audit as AuditLogService
-    participant DB as MySQL
-
-    Admin->>UserAPI: POST /users/{id}/block (topicId included)
-    UserAPI->>UserSvc: block(id, dto)
+    Client->>Filter: POST /topics (Header: Bearer Token)
+    Filter->>Filter: Valida Assinatura JWT
+    Filter->>Filter: Checa status do Usuário (Ativo?)
     
-    activate UserSvc
-    UserSvc->>DB: Altera status do Usuário (Blocked)
-    UserSvc->>Audit: logAction("PERMANENT_BLOCK", user)
-    
-    Note over UserSvc, ContentSvc: Se topicId estiver presente:
-    UserSvc->>ContentSvc: delete(topicId, "Author punished")
-    ContentSvc->>Audit: logAction("DELETE", "TOPIC", backup_content)
-    ContentSvc->>DB: Remove Tópico e Respostas (Cascade)
-    deactivate UserSvc
-    
-    UserAPI-->>Admin: 200 OK (Usuário punido e conteúdo limpo)
+    alt Token Inválido ou Usuário Bloqueado
+        Filter-->>Client: 403 Forbidden
+    else Token Válido
+        Filter->>API: Forward Request (User Context)
+        API->>Service: create(TopicRequestDTO)
+        Service->>DB: Repository.save(Topic)
+        DB-->>Service: Topic Saved (UUID)
+        Service-->>API: TopicResponseDTO
+        API-->>Client: 201 Created (JSON)
+    end
 ```
 
 ---
@@ -112,14 +160,13 @@ sequenceDiagram
 ## 📦 Padrões de Projeto (Design Patterns)
 
 ### Backend
-- **Controller-Service-Repository:** Separação clássica de responsabilidades.
-  - *Controller:* Trata HTTP e validação de entrada.
-  - *Service:* Contém as regras de negócio puras.
-  - *Repository:* Abstração de acesso a dados (Spring Data JPA).
-- **DTO (Data Transfer Object):** Nunca expomos as Entidades JPA diretamente na API. Usamos DTOs (`TopicoRequestDTO`, `TopicoResponseDTO`) para desacoplar o modelo de domínio do contrato da API.
-- **Mapper Pattern:** Uso do **MapStruct** para converter Entidades <-> DTOs de forma performática e sem boilerplate.
+- **Controller-Service-Repository:** Camadas clássicas bem definidas.
+- **DTO (Data Transfer Object):** 
+  - Exposição exclusiva de objetos imutáveis (`Java Records`).
+  - Nomenclatura e Documentação **100% em Inglês** (ex: `TopicRequestDTO`, `RegisterRequestDTO`).
+  - Anotações Swagger (`@Schema`) ricas em detalhes.
+- **Global Exception Handling:** Centralização de erros com `GlobalExceptionHandler`, retornando respostas padronizadas e traduzidas.
 
 ### Frontend
-- **Composition API:** Utilizada em vez da Options API para melhor reutilização de lógica (Composables) e inferência de tipos com TypeScript.
-- **Store Pattern (Pinia):** Gerenciamento de estado centralizado para dados globais (Sessão de Usuário, Tema).
-- **Service Layer:** O frontend possui uma camada de serviço (`src/services/api.ts`) que abstrai as chamadas HTTP (Axios), evitando acoplamento direto nos componentes visuais.
+- **Manual Chunking (Vite):** Otimização de build separando `vendor-vue` e `vendor-vuetify` para carregamento mais rápido.
+- **Service Layer:** Abstração completa do Axios em `src/services/api.ts`.

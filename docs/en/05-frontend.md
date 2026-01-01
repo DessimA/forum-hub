@@ -1,24 +1,45 @@
 # 05 - Frontend (Vue.js 3)
 
-The ForumHub frontend prioritizes clarity and efficiency, utilizing the latest technologies from the Vue ecosystem.
+ForumHub's frontend prioritizes clarity and efficiency, using the latest technologies from the Vue ecosystem.
 
 ## 🎨 User Experience (UX)
-The interface is built entirely on **Vuetify 3**, ensuring all critical interactions occur through integrated components without the use of native browser windows.
+The interface is built entirely on **Vuetify 3**, ensuring all critical interactions occur through integrated components.
 
-### UI Patterns:
-- **Dynamic Navigation:** The topic listing features an integrated toolbar that synchronizes search state (filters and sorting) directly with the URL and Store.
-- **Workflows:** Moderation, editing, and deletion actions use `v-dialog` with real-time field validation.
-- **Notifications:** Success and failure of operations (e.g., "Reply Sent", "Permission Error") are communicated via `v-snackbar` non-intrusively.
+### Interface Patterns:
+- **Dynamic Navigation:** Synchronization of filters and sorting directly with the URL.
+- **Modal Workflows:** Edit and delete actions use `v-dialog`.
+- **Non-Intrusive Feedback:** Notifications via `v-snackbar`.
 
 ---
 
 ## 🏗️ State Management (Pinia)
-Application state is decentralized into specialized stores:
-- **TopicStore:** Manages search complexity. Filters for `status`, `courseId`, and `title` are preserved during pagination to maintain context.
-- **AuthStore:** Decodes the JWT to manage visual hierarchy (hiding moderation buttons for regular users).
+State is decentralized into stores:
+- **TopicStore:** Preserves `status`, `courseId`, and `title` filters during pagination.
+- **AuthStore:** Manages the JWT token and decodes roles for visual access control.
 
 ---
 
-## 🔒 Stability and Performance
-- **Vite 6:** Configured with `inline dependencies` to correctly process Vuetify CSS during tests.
-- **Nginx Cache Busting:** Infrastructure settings ensure `index.html` is never cached, preventing script loading errors after new deployments (MIME type errors).
+## ⚡ Performance & Build
+
+### Bundle Optimization (Manual Chunking)
+To ensure fast initial loading, `vite.config.ts` is configured to split code into strategic chunks:
+
+```mermaid
+graph TD
+    Main[index.html] -->|Loads| VendorVue[vendor-vue.js]
+    Main -->|Loads| VendorVuetify[vendor-vuetify.js]
+    Main -->|Loads| AppCode[index.js (App Logic)]
+    
+    VendorVue --> VueCore
+    VendorVue --> Pinia
+    VendorVue --> Router
+    
+    VendorVuetify --> VuetifyLib
+    VendorVuetify --> Icons
+```
+
+This prevents heavy libraries (like Vuetify) from being re-downloaded every time application logic changes, better utilizing browser caching.
+
+### Security
+- **API Integration:** All HTTP calls pass through an interceptor in `src/services/api.ts` that automatically attaches the Bearer Token.
+- **401 Handling:** Automatic redirection to login upon token expiration.

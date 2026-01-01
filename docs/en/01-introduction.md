@@ -1,47 +1,19 @@
-# 01 - Introduction to ForumHub
+# 01 - Introduction
 
-## 📖 About the Project
-**ForumHub** is a high-performance educational forum platform focused on proactive security and data integrity. The system enables seamless interaction between students and instructors, with total traceability of actions.
+**ForumHub** is a Full Stack application designed as a backend challenge to simulate the behavior of a discussion forum (similar to Alura's). The project focuses on **Proactive Security**, **Clean Architecture**, and **Developer Experience (DX)**.
 
-The project uses a **Modular Monolith** architecture, ensuring business logic is isolated and maintainable, while the interface delivers a modern and responsive user experience.
+## 🎯 Objective
+To provide a stable and secure platform where users can create topics, answer questions, and moderators can maintain community integrity through advanced auditing tools.
 
----
+## 🚀 Core Technologies
+- **Backend:** Java 17 with Spring Boot 3.4.
+- **Frontend:** Vue.js 3 with Vuetify 3.
+- **Database:** MySQL 8.4 with Flyway Migrations.
+- **Security:** Spring Security + JWT.
+- **Infrastructure:** Docker & Docker Compose.
 
-## 📂 Directory Structure
-Official repository organization:
-
-```text
-forum-hub/
-├── automation/             # Public execution and test scripts
-│   ├── run.sh              # Docker CLI Manager (Interactive Menu)
-│   └── test.sh             # Unified Test Runner (Maven + Vitest)
-│
-├── backend/                # Spring Boot 3.4.1 REST API
-│   ├── src/main/java/com/forumhub/
-│   │   ├── modules/        # Domains (User, Topic, Course, Answer, Audit)
-│   │   ├── security/       # Defense in Depth and JWT
-│   │   └── exception/      # Global error handling (Business & Integrity)
-│   └── src/main/resources/db/migration # Flyway versioning
-│
-├── frontend/               # Vue.js 3.5 + Vuetify 3.11 SPA
-│   ├── src/
-│   │   ├── stores/         # Pinia (Search and Auth global state)
-│   │   ├── views/          # Dialog-based interfaces
-│   │   └── services/       # Axios API client
-│   └── vite.config.ts      # Build and Vitest 4 configuration
-│
-└── infra/                  # Infrastructure (Docker & Nginx)
-```
-
----
-
-## 🚀 Key Features (Current State)
-
-| Module | Feature | Description |
-| :--- | :--- | :--- |
-| **Advanced Search** | Filters & Sort | Search by title, course, status, and year with dynamic sorting. |
-| **Lifecycle** | Lock/Unlock | Authors and Moderators can close and reopen discussions. |
-| **Moderation** | Auto-Cleanup | User punishments automatically remove linked offensive content. |
-| **Security** | Real-time Check | Account status verification on every API request. |
-| **Auditing** | Full Restore | Topic and answer recovery preserving original UUIDs. |
-| **Interface** | Modern UX | 100% Dialog and Snackbar based UI (no native popups). |
+## 🌟 Highlights
+1. **Full Auditing:** Every deletion generates a log that allows for full resource restoration, including its original UUID.
+2. **Proactive Security:** Real-time block checking, instantly invalidating tokens of punished users.
+3. **Native i18n:** Backend ready to respond in multiple languages.
+4. **Optimized Build:** Frontend configured for maximum loading performance.

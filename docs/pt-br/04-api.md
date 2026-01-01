@@ -1,55 +1,90 @@
 # 04 - Documentação da API (REST)
 
-A API do FórumHub segue os princípios REST, utilizando JSON para comunicação e JWT para segurança.
+A API do FórumHub é construída sobre os princípios REST, utilizando JSON como formato de troca de mensagens e JWT (JSON Web Tokens) para segurança stateless.
 
-## 🔐 Autenticação
-- **Base URL:** `/api/v1/auth`
-- **Endpoints:**
-  - `POST /login`: Autentica usuário e retorna o token.
-  - `POST /register`: Registra um novo usuário.
+## 📚 Swagger UI (Documentação Interativa)
 
-## 📝 Tópicos
-- **Base URL:** `/api/v1/topics`
+A maneira mais fácil de explorar a API é através do Swagger UI, disponível em ambiente de desenvolvimento.
 
-### Listagem com Filtros Dinâmicos
-`GET /topics`
-Retorna uma página de tópicos. Suporta os seguintes parâmetros de consulta (Query Params):
+- **URL:** `http://localhost:8080/swagger-ui.html`
+- **Recursos:**
+  - Visualização de todos os endpoints.
+  - Esquemas detalhados dos dados de entrada e saída (DTOs).
+  - **Botão "Authorize":** Permite injetar o Token JWT para testar endpoints protegidos diretamente no navegador.
 
-| Parâmetro | Tipo | Descrição |
+> **Segurança:** Em ambiente de produção (`profile: prod`), o Swagger é automaticamente desabilitado para proteção de dados.
+
+---
+
+## 🔐 Autenticação e Segurança
+
+Todos os endpoints protegidos exigem o cabeçalho:
+`Authorization: Bearer <seu_token_jwt>`
+
+### Endpoints de Auth
+- **POST** `/api/v1/auth/login`
+  - **Entrada:** `LoginRequestDTO` (email, password)
+  - **Saída:** `TokenResponseDTO` (token)
+  - **Erros:** 401 (Credenciais Inválidas)
+
+- **POST** `/api/v1/auth/register`
+  - **Entrada:** `RegisterRequestDTO` (name, email, password)
+  - **Saída:** `UserResponseDTO`
+  - **Erros:** 409 (Email já cadastrado)
+
+---
+
+## 🌍 Internacionalização (i18n)
+
+A API suporta múltiplos idiomas para mensagens de erro. O cliente pode solicitar o idioma desejado através do cabeçalho HTTP:
+
+- **Header:** `Accept-Language: pt-BR` (Padrão: Inglês se não informado)
+- **Resposta de Erro:**
+  ```json
+  {
+    "timestamp": "2025-12-31T10:00:00",
+    "status": 403,
+    "error": "Forbidden",
+    "message": "Acesso negado: você não tem permissão...",
+    "path": "/api/v1/users/123"
+  }
+  ```
+
+---
+
+## 📡 Endpoints Principais
+
+### Tópicos (`/api/v1/topics`)
+Gerenciamento de discussões.
+- **GET** `/`: Listagem paginada. Filtros: `courseId`, `status`, `year`, `title`.
+  - *Estabilidade:* A serialização de paginação é garantida via DTO (`VIA_DTO`), assegurando contratos estáveis para o frontend.
+- **POST** `/`: Criação (`TopicRequestDTO`).
+- **GET** `/{id}`: Detalhes completos (`TopicDetailResponseDTO`).
+- **PUT** `/{id}`: Atualização (`TopicUpdateDTO`).
+- **DELETE** `/{id}`: Remoção lógica.
+
+### Respostas (`/api/v1`)
+- **POST** `/topics/{topicId}/answers`: Responder a um tópico.
+- **PATCH** `/answers/{id}/solution`: Marcar resposta como solução.
+
+### Cursos (`/api/v1/courses`)
+- **GET** `/`: Listagem pública de cursos.
+- **POST/PUT/DELETE**: Gestão administrativa de cursos.
+
+### Usuários (`/api/v1/users`)
+- **GET** `/profile`: Dados do usuário logado.
+- **POST** `/{id}/block`: Bloqueio administrativo/moderativo (`BlockRequestDTO`).
+
+---
+
+## 📐 Padrões de DTO (Data Transfer Objects)
+
+Para garantir consistência e profissionalismo, **todos os campos e anotações da API estão em Inglês**.
+
+| DTO | Descrição | Exemplo de Campos |
 | :--- | :--- | :--- |
-| `page` | Integer | Número da página (zero-indexed). |
-| `size` | Integer | Itens por página (default: 10). |
-| `sort` | String | Ordenação (ex: `createdAt,desc` ou `title,asc`). |
-| `title` | String | Busca parcial por título (Case-insensitive). |
-| `courseId` | UUID | Filtra tópicos de um curso específico. |
-| `status` | Enum | Filtra por `OPEN`, `CLOSED` ou `RESOLVED`. |
-| `year` | Integer | Filtra por ano de criação. |
+| `RegisterRequestDTO` | Dados de cadastro | `name`, `email`, `password` |
+| `TopicRequestDTO` | Novo tópico | `title`, `message`, `courseId` |
+| `TopicDetailResponseDTO` | Leitura de tópico | `authorIsBlocked`, `answers` (List) |
 
-### Ciclo de Vida do Tópico
-- `POST /topics`: Cria um novo tópico.
-- `GET /topics/{id}`: Detalhes do tópico, incluindo respostas e status de bloqueio do autor.
-- `PUT /topics/{id}`: Atualiza título, mensagem ou **muda o curso** do tópico (Apenas autor).
-- `PATCH /topics/{id}/close`: Fecha o tópico para novas interações.
-- `PATCH /topics/{id}/reopen`: Reabre um tópico fechado.
-- `DELETE /topics/{id}`: Exclusão lógica com backup na auditoria.
-
-## 💬 Respostas e Soluções
-- **Endpoints:**
-  - `POST /topics/{topicId}/answers`: Adiciona resposta (Apenas tópicos `OPEN`).
-  - `PUT /answers/{id}`: Edita o conteúdo da resposta (Apenas autor).
-  - `PATCH /answers/{id}/solution`: Marca/Desmarca como solução (Apenas autor do tópico).
-  - `DELETE /answers/{id}`: Remove resposta com backup na auditoria.
-
-## 🛡️ Gestão de Usuários e Moderação
-- **Base URL:** `/api/v1/users`
-- **Endpoints:**
-  - `GET /profile`: Dados do usuário logado.
-  - `POST /{id}/block`: Bloqueia usuário. Aceita `topicId` ou `answerId` no corpo para **exclusão automática** do conteúdo ofensivo.
-  - `POST /{id}/unblock`: Remove punição (Admin/Moderador).
-  - `PATCH /{id}/role`: Altera cargo (Admin apenas, com proteção de hierarquia).
-
-## 📊 Auditoria
-- **Base URL:** `/api/v1/admin/logs`
-- **Endpoints:**
-  - `GET /`: Lista todos os logs de exclusão e alteração.
-  - `POST /{id}/restore`: Restaura um tópico ou resposta para o banco de dados original usando o UUID preservado.
+Esta padronização facilita a integração com clientes internacionais e segue as convenções globais de desenvolvimento Java.

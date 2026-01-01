@@ -32,6 +32,7 @@ execute_docker() {
     local service=$1
     local mode=$2
     local profile_flag=""
+    local ENV_FILE="$PROJECT_ROOT/.env"
     
     if [ "$CURRENT_PROFILE" == "prod" ]; then
         profile_flag="--profile prod"
@@ -44,17 +45,17 @@ execute_docker() {
     case $mode in
         1) # Clean Build
             echo -e "${YELLOW}Executando Limpeza Total e Reconstrução ($CURRENT_PROFILE)...${NC}"
-            $DOCKER_CMD -f "$COMPOSE_FILE" $profile_flag down -v
-            $DOCKER_CMD -f "$COMPOSE_FILE" $profile_flag build --no-cache $service
-            SPRING_PROFILES_ACTIVE=$CURRENT_PROFILE $DOCKER_CMD -f "$COMPOSE_FILE" $profile_flag up -d $service
+            $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" $profile_flag down -v
+            $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" $profile_flag build --no-cache $service
+            SPRING_PROFILES_ACTIVE=$CURRENT_PROFILE $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" $profile_flag up -d $service
             ;;
         2) # Rebuild
             echo -e "${YELLOW}Reconstruindo e Iniciando ($CURRENT_PROFILE)...${NC}"
-            SPRING_PROFILES_ACTIVE=$CURRENT_PROFILE $DOCKER_CMD -f "$COMPOSE_FILE" $profile_flag up -d --build $service
+            SPRING_PROFILES_ACTIVE=$CURRENT_PROFILE $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" $profile_flag up -d --build $service
             ;;
         3) # Start
             echo -e "${YELLOW}Iniciando containers ($CURRENT_PROFILE)...${NC}"
-            SPRING_PROFILES_ACTIVE=$CURRENT_PROFILE $DOCKER_CMD -f "$COMPOSE_FILE" $profile_flag up -d $service
+            SPRING_PROFILES_ACTIVE=$CURRENT_PROFILE $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" $profile_flag up -d $service
             ;;
     esac
     

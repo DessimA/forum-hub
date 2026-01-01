@@ -2,6 +2,9 @@ package com.forumhub.exception;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -17,15 +20,18 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.AuthenticationException;
 
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler {
+
+    private final MessageSource messageSource;
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
         var error = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.UNAUTHORIZED.value(),
-                "Unauthorized",
-                "E-mail ou senha incorretos. Por favor, verifique suas credenciais.",
+                messageSource.getMessage("error.unauthorized", null, LocaleContextHolder.getLocale()),
+                messageSource.getMessage("error.invalid_credentials", null, LocaleContextHolder.getLocale()),
                 request.getRequestURI(),
                 null
         );
@@ -37,8 +43,8 @@ public class GlobalExceptionHandler {
         var error = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.UNAUTHORIZED.value(),
-                "Unauthorized",
-                "Falha na autenticação: " + ex.getMessage(),
+                messageSource.getMessage("error.unauthorized", null, LocaleContextHolder.getLocale()),
+                messageSource.getMessage("error.auth_failed", new Object[]{ex.getMessage()}, LocaleContextHolder.getLocale()),
                 request.getRequestURI(),
                 null
         );
@@ -50,7 +56,7 @@ public class GlobalExceptionHandler {
         var error = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.NOT_FOUND.value(),
-                "Not Found",
+                messageSource.getMessage("error.not_found", null, LocaleContextHolder.getLocale()),
                 ex.getMessage(),
                 request.getRequestURI(),
                 null
@@ -63,7 +69,7 @@ public class GlobalExceptionHandler {
         var error = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
-                "Bad Request",
+                messageSource.getMessage("error.bad_request", null, LocaleContextHolder.getLocale()),
                 ex.getMessage(),
                 request.getRequestURI(),
                 null
@@ -76,7 +82,7 @@ public class GlobalExceptionHandler {
         var error = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.CONFLICT.value(),
-                "Conflict",
+                messageSource.getMessage("error.conflict", null, LocaleContextHolder.getLocale()),
                 ex.getMessage(),
                 request.getRequestURI(),
                 null
@@ -93,8 +99,8 @@ public class GlobalExceptionHandler {
         var error = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.BAD_REQUEST.value(),
-                "Validation Error",
-                "Dados inválidos fornecidos",
+                messageSource.getMessage("error.validation", null, LocaleContextHolder.getLocale()),
+                messageSource.getMessage("error.bad_request", null, LocaleContextHolder.getLocale()),
                 request.getRequestURI(),
                 details
         );
@@ -106,8 +112,8 @@ public class GlobalExceptionHandler {
         var error = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.FORBIDDEN.value(),
-                "Forbidden",
-                "Acesso negado: você não tem permissão para realizar esta ação.",
+                messageSource.getMessage("error.forbidden", null, LocaleContextHolder.getLocale()),
+                messageSource.getMessage("error.access_denied", null, LocaleContextHolder.getLocale()),
                 request.getRequestURI(),
                 null
         );
@@ -119,7 +125,7 @@ public class GlobalExceptionHandler {
         var error = new ErrorResponse(
                 LocalDateTime.now(),
                 HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                "Internal Server Error",
+                messageSource.getMessage("error.internal_server_error", null, LocaleContextHolder.getLocale()),
                 ex.getMessage(),
                 request.getRequestURI(),
                 null

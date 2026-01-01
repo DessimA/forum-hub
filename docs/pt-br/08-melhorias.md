@@ -1,41 +1,36 @@
-# 10 - Plano de Melhorias e Dívida Técnica
+# 08 - Roadmap de Melhorias Futuras
 
-Este documento lista os pontos de melhoria identificados no escopo atual do projeto, visando consolidar a qualidade, segurança e manutenibilidade do FórumHub.
+Este documento lista as funcionalidades e refinamentos planejados para o FórumHub que ainda não foram implementados.
 
-## 🚨 Prioridade Alta (Segurança & Estabilidade)
+## 🚀 Próximos Passos (Dívida Técnica e Inovação)
 
-### 1. Gestão de Segredos (Secrets Management)
-- **Problema:** Atualmente, segredos como `API_SECURITY_TOKEN_SECRET` e senhas de banco estão hardcoded no `docker-compose.yml`.
-- **Solução:** Implementar leitura de variáveis de ambiente (`.env`) não versionadas.
-- **Impacto:** Evita vazamento de credenciais em repositórios públicos.
+### Prioridade Alta
 
-### 2. Serialização de Paginação (Spring Data)
-- **Problema:** Logs indicam aviso sobre a serialização instável de `PageImpl` (`Serializing PageImpl instances as-is is not supported`).
-- **Solução:** Configurar `@EnableSpringDataWebSupport(pageSerializationMode = VIA_DTO)` ou migrar para `PagedModel` oficial do Spring HATEOAS.
-- **Impacto:** Garante estabilidade na estrutura JSON de listas paginadas para o frontend.
+1. **Rate Limiting (Proteção contra Brute-Force)**
+   - **Objetivo:** Implementar limitação de requisições por IP, especialmente nos endpoints de autenticação (`/auth/login`), utilizando Bucket4j ou Redis.
+   - **Estado Atual:** Ausente. A API está vulnerável a ataques massivos de dicionário.
 
-## 🛠️ Prioridade Média (Manutenibilidade & DX)
+2. **Internacionalização do Frontend (Vue-i18n)**
+   - **Objetivo:** Permitir que a interface do usuário (botões, menus, labels) mude de idioma dinamicamente entre PT-BR e EN.
+   - **Estado Atual:** A interface está com textos fixos em Português.
 
-### 3. Documentação API (Swagger/OpenAPI)
-- **Problema:** Os DTOs (`TopicRequestDTO`, etc.) carecem de anotações `@Schema`.
-- **Solução:** Adicionar descrições e exemplos aos campos dos DTOs.
-- **Impacto:** Melhora a usabilidade do Swagger UI para desenvolvedores front-end e terceiros.
+### Prioridade Média
 
-### 4. Internacionalização (i18n)
-- **Problema:** Mensagens de erro no Backend (`GlobalExceptionHandler`) e textos do Frontend estão hardcoded em Português.
-- **Solução:**
-  - **Backend:** Implementar `MessageSource` com arquivos `.properties` (messages_pt.properties, messages_en.properties).
-  - **Frontend:** Implementar `vue-i18n`.
-- **Impacto:** Permite que o sistema atenda usuários globais, alinhando-se com a documentação bilíngue.
+3. **Logging Estruturado (JSON)**
+   - **Objetivo:** Configurar o Logback para gerar logs em formato JSON em produção.
+   - **Motivação:** Facilita a ingestão e análise em ferramentas de observabilidade (ELK Stack, Datadog, CloudWatch).
+   - **Estado Atual:** Logs em texto plano padrão (Console).
 
-## ⚡ Prioridade Baixa (Otimização)
+4. **Padronização RFC 7807 (Problem Details)**
+   - **Objetivo:** Adotar o padrão oficial "Problem Details for HTTP APIs" para todas as respostas de erro.
+   - **Estado Atual:** Formato customizado.
 
-### 5. Otimização de Build Frontend
-- **Problema:** O build do Vite alerta sobre chunks maiores que 500kB.
-- **Solução:** Configurar `rollupOptions` no `vite.config.ts` para dividir chunks de vendor (separar `vuetify` e `vue` do bundle principal).
-- **Impacto:** Melhora o tempo de carregamento inicial da aplicação.
+### Prioridade Baixa
 
-### 6. Padronização de Tratamento de Erros (RFC 7807)
-- **Problema:** O formato de erro atual é customizado.
-- **Solução:** Adotar o padrão **Problem Details for HTTP APIs (RFC 7807)**.
-- **Impacto:** Aumenta a interoperabilidade com clientes HTTP padrão.
+5. **Cache de Segundo Nível (L2 Cache)**
+   - **Objetivo:** Implementar cache para entidades pouco voláteis (ex: `Course`, `Profile`) usando Caffeine ou Redis.
+   - **Motivação:** Reduzir carga no banco de dados em listagens frequentes.
+
+6. **Pipeline de CI/CD (GitHub Actions)**
+   - **Objetivo:** Automatizar testes e build a cada push.
+   - **Estado Atual:** Scripts manuais (`run.sh`).

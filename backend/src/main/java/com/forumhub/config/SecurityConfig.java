@@ -30,7 +30,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(req -> {
                     req.requestMatchers(HttpMethod.POST, "/api/v1/auth/**").permitAll();
                     req.requestMatchers(HttpMethod.GET, "/api/v1/courses").permitAll();
-                    req.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
+                    req.requestMatchers("/v3/api-docs/**", "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
                     req.requestMatchers("/actuator/health").permitAll();
                     req.anyRequest().authenticated();
                 })

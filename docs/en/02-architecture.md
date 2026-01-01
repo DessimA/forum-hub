@@ -1,102 +1,158 @@
 # 02 - Software Architecture
 
-This document details the architectural decisions, system design, and patterns adopted in **ForumHub**.
+This document details the architectural decisions, system design, and patterns adopted in **ForumHub**. The application follows **Clean Code** and **SOLID** principles and uses a **Modular Monolith** architecture to ensure organization and scalability without premature microservices complexity.
 
 ## 🏗️ Overview (C4 Model)
 
-ForumHub follows a **Modular Monolith** architecture, clearly separating the Frontend (SPA) from the Backend (REST API) while maintaining deployment simplicity.
+ForumHub clearly separates the Frontend (SPA) from the Backend (REST API), communicating exclusively via JSON.
 
-### Container Diagram
+### Container Diagram (C4 Level 2)
 
 ```mermaid
 graph TD
-    User("👤 User<br/>(Student or Instructor)")
-
-    subgraph ForumHub [ForumHub System]
-        direction TB
-        SPA("🖥️ Single Page Application<br/>(Vue.js 3 + Vite)")
-        API("⚙️ API Application<br/>(Java 17 + Spring Boot 3)")
-        DB[("🗄️ Database<br/>(MySQL 8)")]
+    User("👤 User<br/>(Browser/Mobile)")
+    
+    subgraph "Docker Host"
+        Nginx("🌐 Nginx Proxy<br/>(Port 80/443)")
+        
+        subgraph "Frontend Container"
+            VueApp("🖥️ Vue.js SPA<br/>(Vite Optimized)")
+        end
+        
+        subgraph "Backend Container"
+            SpringBoot("⚙️ Spring Boot API<br/>(Port 8080)")
+        end
+        
+        subgraph "Data Container"
+            MySQL("🗄️ MySQL 8.4<br/>(Port 3306)")
+        end
     end
 
-    User -->|Uses HTTPS| SPA
-    SPA -->|JSON/HTTPS| API
-    API -->|JDBC| DB
+    User -->|HTTPS Request| Nginx
+    Nginx -->|Serve Static| VueApp
+    Nginx -->|Proxy /api| SpringBoot
+    SpringBoot -->|JPA/Hibernate| MySQL
+```
+
+### Internal Backend Architecture (Modular Monolith)
+
+The backend is divided into independent domain modules, reducing coupling and facilitating maintenance.
+
+```mermaid
+graph TD
+    subgraph "API Layer (Controllers)"
+        AuthController
+        TopicController
+        AnswerController
+        CourseController
+        UserController
+        AuditController
+    end
+
+    subgraph "Core Modules (Service/Domain)"
+        Auth[Auth Module]
+        Topic[Topic Module]
+        Answer[Answer Module]
+        Course[Course Module]
+        User[User Module]
+        Audit[Audit Module]
+    end
+
+    subgraph "Infrastructure"
+        Security["Spring Security / JWT"]
+        Docs["SpringDoc OpenAPI"]
+        I18n["MessageSource (EN/PT-BR)"]
+        DB["MySQL Database"]
+    end
+
+    AuthController --> Auth
+    TopicController --> Topic
+    AnswerController --> Answer
+    CourseController --> Course
+    UserController --> User
+    AuditController --> Audit
+
+    Auth --> User
+    Topic --> Course
+    Topic --> User
+    Answer --> Topic
+    Answer --> User
+    
+    Auth --> Security
+    Topic --> Security
+    Answer --> Security
+    User --> Security
+    
+    Auth --> DB
+    Topic --> DB
+    Answer --> DB
+    Course --> DB
+    User --> DB
+    Audit --> DB
+
+    Auth --> I18n
+    Topic --> I18n
+    
+    AuthController --> Docs
+    TopicController --> Docs
 ```
 
 ---
 
-## 🏛️ Architectural Decision Records (ADRs)
+## 🏛️ Architectural Decisions (ADRs)
 
-### 1. Decoupled Architecture (Frontend-Backend Separation)
+### 1. Frontend-Backend Separation (Decoupled Architecture)
 - **Decision:** Separate UI (Vue.js) from Business Logic (Spring Boot).
-- **Motivation:** Allows independent team development, facilitates horizontal backend scaling, and enables future clients (e.g., Mobile App) to consume the same API.
+- **Status:** Implemented.
+- **Motivation:** Allows independent development and facilitates horizontal scaling of the backend.
 
 ### 2. Stateless Authentication (JWT)
 - **Decision:** Use JSON Web Tokens (JWT) for authentication.
-- **Motivation:** Eliminates server-side session synchronization (stateless), ideal for containerized and scalable environments.
+- **Status:** Implemented and Documented with Swagger.
+- **Detail:** Bearer Auth support implemented in Swagger UI, allowing protected tests directly in the browser.
 
-### 3. Versioned Database Migration (Flyway)
-- **Decision:** Use Flyway to manage database schema.
-- **Motivation:** Ensures database state is reproducible in any environment (Dev, Test, Prod) and avoids manual SQL conflicts.
+### 3. Database Migration (Flyway)
+- **Decision:** Use Flyway for versioned database schema management.
+- **Status:** Implemented (V1 to V5).
 
-### 4. Deterministic UUIDs (BINARY 16)
+### 4. Deterministic UUIDs
 - **Decision:** Use `BINARY(16)` for all primary IDs.
-- **Strategy:** Unlike `VARCHAR(36)`, `BINARY(16)` uses less disk space and improves index performance. Using UUIDs prevents "ID Enumeration Attacks", where attackers could predict sequential IDs to mine data.
+- **Motivation:** Superior performance over `VARCHAR(36)` and prevention against ID enumeration attacks.
+
+### 5. Internationalization (i18n)
+- **Decision:** Backend responds with error messages based on the `Accept-Language` header.
+- **Status:** Implemented (`messages_en.properties` and `messages_pt_BR.properties` files).
+- **Motivation:** Global API support, decoupling error messages from the source code.
 
 ---
 
-## 🛡️ Proactive Security Patterns
+## 🔌 Critical Data Flows
 
-### Defense in Depth
-The system does not rely solely on JWT signature. For every protected request, the `SecurityValidationService` performs a quick database lookup to verify if the user's account was suspended or banned **after** the token was issued, ensuring punished users lose access in real-time.
-
-### Moderation Hierarchy
-Permission logic is hardcoded to protect the system from abuse:
-- Admins can manage everyone.
-- Moderators can manage regular users, but the system blocks actions against Administrators or other Moderators of the same level.
-
----
-
-## 🔌 Real Data Flow
-
-The diagram below illustrates the exact flow of a topic creation request, as implemented in `TopicService`:
+### 1. Secure Topic Creation
+This flow demonstrates security validation and persistence.
 
 ```mermaid
 sequenceDiagram
-    participant User
+    participant Client as Frontend/Swagger
     participant Filter as SecurityFilter
     participant API as TopicController
     participant Service as TopicService
-    participant Validator as ValidationService
     participant DB as MySQL
 
-    User->>Filter: POST /topics (Bearer Token)
-    Filter->>Filter: Validates Token & Sets User Context
-    Filter->>API: Forwards Request
-
-    activate API
-    API->>API: @Valid (Bean Validation)
-    API->>Service: create(dto)
+    Client->>Filter: POST /topics (Header: Bearer Token)
+    Filter->>Filter: Validate JWT Signature
+    Filter->>Filter: Check User status (Active?)
     
-    activate Service
-    Service->>Service: SecurityService.getCurrentUser()
-    Service->>Validator: validateNotDuplicate(title, msg)
-    Validator->>DB: count(title, msg)
-    DB-->>Validator: 0
-    
-    Service->>DB: CourseRepository.findById(courseId)
-    DB-->>Service: Course Entity
-    
-    Service->>Service: Mapper.toEntity(dto)
-    Service->>DB: TopicRepository.save(topic)
-    DB-->>Service: Topic Saved (UUID)
-    
-    Service-->>API: TopicResponseDTO
-    deactivate Service
-    
-    API-->>User: 201 Created (Location Header)
-    deactivate API
+    alt Invalid Token or Blocked User
+        Filter-->>Client: 403 Forbidden
+    else Valid Token
+        Filter->>API: Forward Request (User Context)
+        API->>Service: create(TopicRequestDTO)
+        Service->>DB: Repository.save(Topic)
+        DB-->>Service: Topic Saved (UUID)
+        Service-->>API: TopicResponseDTO
+        API-->>Client: 201 Created (JSON)
+    end
 ```
 
 ---
@@ -104,14 +160,13 @@ sequenceDiagram
 ## 📦 Design Patterns
 
 ### Backend
-- **Controller-Service-Repository:** Classic separation of concerns.
-  - *Controller:* Handles HTTP and input validation.
-  - *Service:* Contains pure business rules.
-  - *Repository:* Data access abstraction (Spring Data JPA).
-- **DTO (Data Transfer Object):** We never expose JPA Entities directly. We use DTOs (`TopicRequestDTO`, `TopicResponseDTO`) to decouple domain models from the API contract.
-- **Mapper Pattern:** Using **MapStruct** for performant Entity <-> DTO conversion without boilerplate.
+- **Controller-Service-Repository:** Well-defined classic layers.
+- **DTO (Data Transfer Object):** 
+  - Exclusive exposure of immutable objects (`Java Records`).
+  - Naming and Documentation **100% in English** (e.g., `TopicRequestDTO`, `RegisterRequestDTO`).
+  - Rich Swagger annotations (`@Schema`).
+- **Global Exception Handling:** Centralized errors with `GlobalExceptionHandler`, returning standardized and translated responses.
 
 ### Frontend
-- **Composition API:** Used instead of Options API for better logic reuse (Composables) and TypeScript type inference.
-- **Store Pattern (Pinia):** Centralized state management for global data (User Session, Theme).
-- **Service Layer:** The frontend has a service layer (`src/services/api.ts`) abstracting HTTP calls (Axios), avoiding direct coupling in visual components.
+- **Manual Chunking (Vite):** Build optimization by separating `vendor-vue` and `vendor-vuetify` for faster loading.
+- **Service Layer:** Complete Axios abstraction in `src/services/api.ts`.

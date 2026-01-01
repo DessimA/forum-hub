@@ -1,0 +1,12 @@
+# Configurações específicas para Desenvolvimento
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+spring:
+  jpa:
+    show-sql: true
+    hibernate:
+      ddl-auto: update
