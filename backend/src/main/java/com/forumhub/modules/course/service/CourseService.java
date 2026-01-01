@@ -8,6 +8,8 @@ import com.forumhub.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -24,18 +26,21 @@ public class CourseService {
     private final CourseMapper mapper;
 
     @Transactional
+    @CacheEvict(value = "courses", allEntries = true)
     public CourseResponseDTO create(CourseRequestDTO dto) {
         log.info("Creating course: {}", dto.name());
         var course = mapper.toEntity(dto);
         return mapper.toResponse(repository.save(course));
     }
 
-    public Page<CourseResponseDTO> listAll(Pageable pageable) {
-        return repository.findAll(pageable)
-                .map(mapper::toResponse);
+    @Cacheable(value = "courses", key = "#pageable.pageNumber + '-' + #pageable.pageSize")
+    public com.forumhub.util.RestPage<CourseResponseDTO> listAll(org.springframework.data.domain.Pageable pageable) {
+        var page = repository.findAll(pageable).map(mapper::toResponse);
+        return new com.forumhub.util.RestPage<>(page.getContent(), page.getPageable(), page.getTotalElements());
     }
 
     @Transactional
+    @CacheEvict(value = "courses", allEntries = true)
     public CourseResponseDTO update(UUID id, CourseRequestDTO dto) {
         log.info("Updating course ID: {}", id);
         var course = repository.findById(id)
@@ -48,6 +53,7 @@ public class CourseService {
     }
 
     @Transactional
+    @CacheEvict(value = "courses", allEntries = true)
     public void delete(UUID id) {
         log.warn("Deleting course ID: {}", id);
         if (!repository.existsById(id)) {

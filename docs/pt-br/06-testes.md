@@ -1,44 +1,50 @@
-# 06 - Detalhamento da Estratégia de Testes
+# 06 - Testes Automatizados
 
-O FórumHub utiliza uma pirâmide de testes robusta para garantir a estabilidade das regras de negócio, a segurança dos dados e a integridade da interface.
+O **FórumHub** utiliza uma pirâmide de testes abrangente, garantindo a estabilidade tanto do Backend quanto do Frontend.
 
-## 🏗️ Backend (Java & Spring Boot)
+## 🏛️ Estratégia de Testes
 
-### 1. Testes de Segurança e Autenticação
-Localizados em `com.forumhub.security.*`, estes testes validam o perímetro defensivo da aplicação.
-- **Sessão Ativa vs Bloqueio:** Garante que se um administrador bloquear um usuário, o acesso dele seja revogado **imediatamente**, mesmo que o token JWT ainda seja válido.
-- **Validação de Token:** Testes de integridade do JWT, expiração e assinatura (HMAC256).
+### Backend (Java/Spring Boot)
+- **Unitários:** Validação de regras de negócio em isolamento (JUnit 5 + Mockito).
+- **Integração:** Validação da persistência (H2 Database) e da camada de segurança.
+- **Infraestrutura:** Testes de integração real com **Redis** para validar Rate Limiting e Cache L2.
 
-### 2. Ciclo de Vida e Consistência
-Localizados em `com.forumhub.modules.topic.*`.
-- **Integridade de Status:** Valida transições de estado (ABERTO -> RESOLVIDO).
-- **Prevenção de Duplicatas:** Bloqueio de tópicos idênticos.
-- **Filtragem Dinâmica:** Validação de filtros complexos (curso, status, busca).
+### Frontend (Vue.js)
+- **Unitários:** Testes de componentes e stores (Vitest).
+- **E2E (End-to-End):** Fluxos críticos de usuário (Cypress).
 
 ---
 
-## 🖥️ Frontend (Vue.js & Vitest)
+## 🚀 Execução via Docker (Recomendado)
 
-### 1. Gestão de Estado (Store)
-Localizados em `src/stores/__tests__/*`.
-- **Consistência:** Valida que a Store reseta a paginação ao aplicar filtros.
-- **Segurança:** Garante limpeza do `localStorage` ao deslogar.
+O projeto possui um ambiente de testes isolado que sobe automaticamente os serviços necessários (Redis + H2).
 
-### 2. Componentes e UI
-Localizados em `src/views/__tests__/*`.
-- **Feedback Visual:** Validação de spinners de carregamento e mensagens de erro.
-- **Mocks:** Uso de JSDOM para simular comportamento do navegador.
+### Executar todos os testes
+```bash
+./automation/test.sh
+```
+
+### O que o script faz:
+1. Sobe um container de **Redis** dedicado para os testes.
+2. Executa os testes de backend no container `backend-test` (USA profile `test`).
+3. Executa os testes unitários de frontend no container `frontend-test`.
+4. Gera um relatório consolidado no terminal.
 
 ---
 
-## 🚀 Execução Unificada e Segura
+## 🛠️ Detalhes da Infraestrutura de Teste
 
-O script `./automation/test.sh` orquestra a execução das suítes em containers isolados.
+### Profile de Teste (`application-test.yml`)
+- **Banco de Dados:** H2 Database (In-Memory com modo MySQL).
+- **Cache:** Redis real (conectado via rede Docker interna).
+- **Rate Limit:** Ajustado para limites menores em testes específicos para validação rápida.
 
-### ⚠️ Requisito Crítico: Variáveis de Ambiente
-Os testes **dependem** do arquivo `.env` na raiz do projeto para configurar as credenciais do banco de dados de teste e segredos JWT.
-- O script utiliza a flag `--env-file` do Docker Compose para injetar essas variáveis com segurança.
-- **Nunca** execute os testes sem antes criar o arquivo `.env` (use `.env.example` como base).
+### Resiliência no Redis
+Os testes de integração utilizam o utilitário `RestPage` para validar a serialização correta no Redis. Caso o Redis esteja offline, o sistema entra em modo de fallback automático, logando um aviso mas permitindo que a aplicação continue funcionando.
 
-### Relatório Final
-O script consolida os resultados do Maven (Backend) e Vitest (Frontend), retornando sucesso apenas se **ambos** passarem.
+---
+
+## 📊 Cobertura e Qualidade
+- **Target Backend:** > 80% de cobertura.
+- **Target Frontend:** > 75% de cobertura.
+- **Regra de Ouro:** Nenhum código é integrado à branch `main` sem passar em 100% dos testes automatizados.

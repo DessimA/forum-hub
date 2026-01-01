@@ -30,6 +30,10 @@ echo -e "${YELLOW}Preparando ambiente de testes no Docker...${NC}"
 # Carregar variáveis do .env da raiz do projeto para garantir consistência
 ENV_FILE="$PROJECT_ROOT/.env"
 
+# Garantir que o Redis esteja rodando para os testes de integração
+echo -e "${YELLOW}Subindo serviço Redis para testes...${NC}"
+$DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d redis
+
 # Backend Tests (H2)
 echo -e "\n${BLUE}>> Executando testes do BACKEND...${NC}"
 $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$TEST_COMPOSE_FILE" run --build --rm backend-test mvn -B -ntp -q test

@@ -1,10 +1,10 @@
 # 02 - Software Architecture
 
-This document details the architectural decisions, system design, and patterns adopted in **ForumHub**. The application follows **Clean Code** and **SOLID** principles and uses a **Modular Monolith** architecture to ensure organization and scalability without premature microservices complexity.
+This document details the architectural decisions, system design, and patterns adopted in **FórumHub**. The application follows **Clean Code**, **SOLID** principles and uses a **Modular Monolith** architecture to ensure organization and scalability without the premature complexity of microservices.
 
 ## 🏗️ Overview (C4 Model)
 
-ForumHub clearly separates the Frontend (SPA) from the Backend (REST API), communicating exclusively via JSON.
+FórumHub clearly separates the Frontend (SPA) from the Backend (REST API), communicating exclusively via JSON.
 
 ### Container Diagram (C4 Level 2)
 
@@ -34,7 +34,7 @@ graph TD
     SpringBoot -->|JPA/Hibernate| MySQL
 ```
 
-### Internal Backend Architecture (Modular Monolith)
+### Backend Internal Architecture (Modular Monolith)
 
 The backend is divided into independent domain modules, reducing coupling and facilitating maintenance.
 
@@ -63,6 +63,7 @@ graph TD
         Docs["SpringDoc OpenAPI"]
         I18n["MessageSource (EN/PT-BR)"]
         DB["MySQL Database"]
+        Redis["Redis (Cache/Limit)"]
     end
 
     AuthController --> Auth
@@ -102,27 +103,27 @@ graph TD
 ## 🏛️ Architectural Decisions (ADRs)
 
 ### 1. Frontend-Backend Separation (Decoupled Architecture)
-- **Decision:** Separate UI (Vue.js) from Business Logic (Spring Boot).
+- **Decision:** Separate the UI (Vue.js) from the Business Logic (Spring Boot).
 - **Status:** Implemented.
-- **Motivation:** Allows independent development and facilitates horizontal scaling of the backend.
+- **Motivation:** Allows independent team development and facilitates horizontal scaling of the backend.
 
 ### 2. Stateless Authentication (JWT)
 - **Decision:** Use JSON Web Tokens (JWT) for authentication.
 - **Status:** Implemented and Documented with Swagger.
-- **Detail:** Bearer Auth support implemented in Swagger UI, allowing protected tests directly in the browser.
+- **Detail:** Implemented **Bearer Auth** support in Swagger UI, allowing protected tests directly in the browser.
 
 ### 3. Database Migration (Flyway)
-- **Decision:** Use Flyway for versioned database schema management.
+- **Decision:** Use Flyway to manage the database schema in a versioned manner.
 - **Status:** Implemented (V1 to V5).
 
-### 4. Deterministic UUIDs
+### 4. Use of Deterministic UUIDs
 - **Decision:** Use `BINARY(16)` for all primary IDs.
-- **Motivation:** Superior performance over `VARCHAR(36)` and prevention against ID enumeration attacks.
+- **Motivation:** Superior performance compared to `VARCHAR(36)` and prevention against ID enumeration attacks.
 
 ### 5. Internationalization (i18n)
-- **Decision:** Backend responds with error messages based on the `Accept-Language` header.
-- **Status:** Implemented (`messages_en.properties` and `messages_pt_BR.properties` files).
-- **Motivation:** Global API support, decoupling error messages from the source code.
+- **Decision:** Backend responds error messages based on the `Accept-Language` header.
+- **Status:** Implemented (Files `messages_en.properties` and `messages_pt_BR.properties`).
+- **Motivation:** Global support for the API, decoupling error messages from the source code.
 
 ---
 
@@ -140,8 +141,8 @@ sequenceDiagram
     participant DB as MySQL
 
     Client->>Filter: POST /topics (Header: Bearer Token)
-    Filter->>Filter: Validate JWT Signature
-    Filter->>Filter: Check User status (Active?)
+    Filter->>Filter: Validates JWT Signature
+    Filter->>Filter: Checks User status (Active?)
     
     alt Invalid Token or Blocked User
         Filter-->>Client: 403 Forbidden
@@ -157,16 +158,34 @@ sequenceDiagram
 
 ---
 
-## 📦 Design Patterns
+## ⚡ Security and Performance (Infrastructure)
+
+### 1. Distributed Caching Layer (Redis)
+- **Decision:** Use Redis as a Second Level Cache (L2 Cache).
+- **Motivation:** Reduce latency and MySQL database resource consumption for frequent read operations (listings).
+- **Implementation:** Cache applied to course and topic listings, with automatic invalidation (`@CacheEvict`) on write operations (POST/PUT/DELETE).
+
+### 2. Traffic Control (Rate Limiting)
+- **Decision:** Limit requests per IP using Redis.
+- **Configuration:** Default limit of 100 requests per minute.
+- **Motivation:** Prevent brute force attacks on login and mitigate DoS (Denial of Service) attempts.
+
+### 3. Serialization Resilience (RestPage)
+- **Decision:** Create the `RestPage<T>` wrapper for paginated objects.
+- **Motivation:** Solve Jackson's limitation when deserializing Spring Data's `PageImpl` objects from Redis cache, eliminating the need for missing default constructors in the original class.
+
+---
+
+## 📦 Project Patterns (Design Patterns)
 
 ### Backend
-- **Controller-Service-Repository:** Well-defined classic layers.
+- **Controller-Service-Repository:** Classic well-defined layers.
 - **DTO (Data Transfer Object):** 
   - Exclusive exposure of immutable objects (`Java Records`).
-  - Naming and Documentation **100% in English** (e.g., `TopicRequestDTO`, `RegisterRequestDTO`).
+  - **100% English** Naming and Documentation (e.g., `TopicRequestDTO`, `RegisterRequestDTO`).
   - Rich Swagger annotations (`@Schema`).
-- **Global Exception Handling:** Centralized errors with `GlobalExceptionHandler`, returning standardized and translated responses.
+- **Global Exception Handling:** Centralization of errors with `GlobalExceptionHandler`, returning standardized and translated responses.
 
 ### Frontend
-- **Manual Chunking (Vite):** Build optimization by separating `vendor-vue` and `vendor-vuetify` for faster loading.
-- **Service Layer:** Complete Axios abstraction in `src/services/api.ts`.
+- **Manual Chunking (Vite):** Build optimization separating `vendor-vue` and `vendor-vuetify` for faster loading.
+- **Service Layer:** Complete abstraction of Axios in `src/services/api.ts`.

@@ -14,6 +14,8 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,6 +39,7 @@ public class TopicService {
     private final AuditLogService auditLogService;
 
     @Transactional
+    @CacheEvict(value = "topics", allEntries = true)
     public TopicResponseDTO create(TopicRequestDTO dto) {
         var author = securityService.getCurrentAuthenticatedUser();
         
@@ -55,9 +58,11 @@ public class TopicService {
         return topicMapper.toResponseDTO(savedTopic);
     }
 
-    public Page<TopicResponseDTO> list(Pageable pageable, UUID courseId, TopicStatus status, Integer year, String title) {
+    @Cacheable(value = "topics", key = "{#pageable.pageNumber, #courseId, #status, #year, #title}")
+    public com.forumhub.util.RestPage<TopicResponseDTO> list(org.springframework.data.domain.Pageable pageable, UUID courseId, TopicStatus status, Integer year, String title) {
         var spec = com.forumhub.modules.topic.repository.TopicSpecification.filterBy(courseId, status, year, title);
-        return topicRepository.findAll(spec, pageable).map(topicMapper::toResponseDTO);
+        var page = topicRepository.findAll(spec, pageable).map(topicMapper::toResponseDTO);
+        return new com.forumhub.util.RestPage<>(page.getContent(), page.getPageable(), page.getTotalElements());
     }
 
     public TopicDetailResponseDTO getDetail(UUID id) {
@@ -80,6 +85,7 @@ public class TopicService {
     }
 
     @Transactional
+    @CacheEvict(value = {"topics", "courses"}, allEntries = true)
     public TopicResponseDTO update(UUID id, TopicUpdateDTO dto) {
         var topic = topicRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Topic not found"));
@@ -99,6 +105,7 @@ public class TopicService {
     }
 
     @Transactional
+    @CacheEvict(value = "topics", allEntries = true)
     public TopicResponseDTO close(UUID id) {
         var topic = topicRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Topic not found"));
@@ -111,6 +118,7 @@ public class TopicService {
     }
 
     @Transactional
+    @CacheEvict(value = "topics", allEntries = true)
     public TopicResponseDTO reopen(UUID id) {
         var topic = topicRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Topic not found"));
@@ -123,6 +131,7 @@ public class TopicService {
     }
 
     @Transactional
+    @CacheEvict(value = "topics", allEntries = true)
     public void delete(UUID id, String justification) {
         var topic = topicRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Topic not found"));

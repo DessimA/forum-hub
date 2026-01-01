@@ -1,44 +1,50 @@
-# 06 - Testing Strategy Detail
+# 06 - Automated Testing
 
-ForumHub uses a robust testing pyramid to ensure business rule stability, data security, and interface integrity.
+**FórumHub** uses a comprehensive testing pyramid, ensuring stability for both the Backend and Frontend.
 
-## 🏗️ Backend (Java & Spring Boot)
+## 🏛️ Testing Strategy
 
-### 1. Security & Authentication Tests
-Located in `com.forumhub.security.*`.
-- **Active Session vs Blocking:** Ensures immediate access revocation for blocked users.
-- **Token Validation:** Validates JWT integrity, expiration, and signature.
+### Backend (Java/Spring Boot)
+- **Unit Tests:** Business logic validation in isolation (JUnit 5 + Mockito).
+- **Integration Tests:** Validation of persistence (H2 Database) and security layer.
+- **Infrastructure Tests:** Real integration tests with **Redis** to validate Rate Limiting and L2 Cache.
 
-### 2. Lifecycle & Consistency
-Located in `com.forumhub.modules.topic.*`.
-- **Status Integrity:** Validates state transitions.
-- **Duplicate Prevention:** Blocks identical topics.
-- **Dynamic Filtering:** Validates complex query filters.
+### Frontend (Vue.js)
+- **Unit Tests:** Component and store tests (Vitest).
+- **E2E (End-to-End):** Critical user flows (Cypress).
 
 ---
 
-## 🖥️ Frontend (Vue.js & Vitest)
+## 🚀 Execution via Docker (Recommended)
 
-### 1. State Management (Store)
-Located in `src/stores/__tests__/*`.
-- **Consistency:** Validates pagination reset on filter application.
-- **Security:** Ensures `localStorage` cleanup on logout.
+The project has an isolated testing environment that automatically starts the necessary services (Redis + H2).
 
-### 2. Components & UI
-Located in `src/views/__tests__/*`.
-- **Visual Feedback:** Validates loading spinners and error messages.
-- **Mocks:** Uses JSDOM to simulate browser behavior.
+### Run all tests
+```bash
+./automation/test.sh
+```
+
+### What the script does:
+1. Starts a dedicated **Redis** container for testing.
+2. Runs backend tests in the `backend-test` container (uses `test` profile).
+3. Runs frontend unit tests in the `frontend-test` container.
+4. Generates a consolidated report in the terminal.
 
 ---
 
-## 🚀 Unified Secure Execution
+## 🛠️ Testing Infrastructure Details
 
-The `./automation/test.sh` script orchestrates suite execution in isolated containers.
+### Test Profile (`application-test.yml`)
+- **Database:** H2 Database (In-Memory with MySQL mode).
+- **Cache:** Real Redis (connected via internal Docker network).
+- **Rate Limit:** Adjusted to lower limits in specific tests for fast validation.
 
-### ⚠️ Critical Requirement: Environment Variables
-Tests **depend** on the `.env` file in the project root to configure test database credentials and JWT secrets.
-- The script uses Docker Compose's `--env-file` flag to securely inject these variables.
-- **Never** run tests without first creating the `.env` file (use `.env.example` as a template).
+### Redis Resilience
+Integration tests use the `RestPage` utility to validate correct serialization in Redis. If Redis is offline, the system enters an automatic fallback mode, logging a warning but allowing the application to continue functioning.
 
-### Final Report
-The script consolidates Maven (Backend) and Vitest (Frontend) results, returning success only if **both** pass.
+---
+
+## 📊 Coverage and Quality
+- **Backend Target:** > 80% coverage.
+- **Frontend Target:** > 75% coverage.
+- **Golden Rule:** No code is integrated into the `main` branch without passing 100% of the automated tests.

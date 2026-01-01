@@ -11,8 +11,23 @@ Utilizamos `docker-compose` para gerenciar o ciclo de vida da aplicação.
 | Serviço | Imagem | Porta Exposta | Função | Variáveis Críticas |
 | :--- | :--- | :--- | :--- | :--- |
 | **MySQL** | `mysql:8.4` | 3306 | Persistência de dados | `MYSQL_ROOT_PASSWORD` |
-| **Backend** | `eclipse-temurin:17` | 8080 | API Spring Boot | `SPRING_DATASOURCE_PASSWORD`, `API_SECURITY_TOKEN_SECRET` |
+| **Redis** | `redis:alpine` | 6379 | Cache L2 e Rate Limit | - |
+| **Backend** | `eclipse-temurin:17` | 8080 | API Spring Boot | `SPRING_DATA_REDIS_HOST`, `API_SECURITY_TOKEN_SECRET` |
 | **Frontend** | `nginx:stable-alpine` | 80 / 3000 | Servidor Web / Proxy | - |
+
+---
+
+## ⚡ Performance e Resiliência (Redis)
+
+O FórumHub utiliza **Redis** para duas funções críticas:
+1. **L2 Cache:** Armazenamento de resultados de listagens paginadas para evitar acessos repetitivos ao MySQL.
+2. **Rate Limiting:** Controle de vazão de requisições por IP.
+
+### Configuração de Rede
+Todos os containers operam na rede interna `forumhub-network`. O Backend comunica-se com o Redis através do hostname `redis`, garantindo isolamento e facilidade de configuração via DNS interno do Docker.
+
+### Resiliência Automática
+A aplicação foi desenvolvida com **Fail-Safe** para o cache. Caso o serviço Redis fique offline, o Backend captura a exceção, loga um aviso (`WARN`) e redireciona a requisição diretamente para o banco de dados, garantindo que o sistema permaneça funcional.
 
 ---
 

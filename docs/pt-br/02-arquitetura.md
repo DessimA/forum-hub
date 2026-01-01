@@ -167,6 +167,20 @@ sequenceDiagram
   - Anotações Swagger (`@Schema`) ricas em detalhes.
 - **Global Exception Handling:** Centralização de erros com `GlobalExceptionHandler`, retornando respostas padronizadas e traduzidas.
 
-### Frontend
-- **Manual Chunking (Vite):** Otimização de build separando `vendor-vue` e `vendor-vuetify` para carregamento mais rápido.
-- **Service Layer:** Abstração completa do Axios em `src/services/api.ts`.
+---
+
+## ⚡ Segurança e Performance (Infraestrutura)
+
+### 1. Camada de Cache Distribuído (Redis)
+- **Decisão:** Utilização do Redis como cache de segundo nível (L2 Cache).
+- **Motivação:** Reduzir a latência e o consumo de recursos do banco de dados MySQL em operações de leitura frequentes (listagens).
+- **Implementação:** Cache aplicado nas listagens de cursos e tópicos, com invalidação automática (`@CacheEvict`) em operações de escrita (POST/PUT/DELETE).
+
+### 2. Controle de Tráfego (Rate Limiting)
+- **Decisão:** Limitar requisições por IP utilizando Redis.
+- **Configuração:** Limite padrão de 100 requisições por minuto.
+- **Motivação:** Prevenir ataques de força bruta no login e mitigar tentativas de DoS (Denial of Service).
+
+### 3. Resiliência de Serialização (RestPage)
+- **Decisão:** Criação do wrapper `RestPage<T>` para objetos paginados.
+- **Motivação:** Resolver a limitação do Jackson ao deserializar objetos `PageImpl` do Spring Data vindos do cache Redis, eliminando a necessidade de construtores padrão ausentes na classe original.

@@ -1,36 +1,16 @@
-# 08 - Roadmap de Melhorias Futuras
+# 🚀 Roadmap de Melhorias
 
-Este documento lista as funcionalidades e refinamentos planejados para o FórumHub que ainda não foram implementados.
+Este documento detalha as próximas etapas planejadas para evolução do **FórumHub**. Os itens concluídos de infraestrutura e estabilidade foram integrados à documentação principal do projeto.
 
-## 🚀 Próximos Passos (Dívida Técnica e Inovação)
+## 🏗️ Em Progresso (Fase 2: UX e Globalização)
 
-### Prioridade Alta
+- [ ] **Internacionalização Frontend:** Implementação de `vue-i18n` para suporte multi-idioma na SPA (PT-BR e EN).
+- [ ] **Padronização RFC 7807:** Implementação de Problem Details para erros de API mais semânticos.
+- [ ] **Melhoria na UX de Erro:** Implementação de Snackbars dinâmicos e feedbacks contextuais no frontend baseados nas respostas traduzidas do backend.
 
-1. **Rate Limiting (Proteção contra Brute-Force)**
-   - **Objetivo:** Implementar limitação de requisições por IP, especialmente nos endpoints de autenticação (`/auth/login`), utilizando Bucket4j ou Redis.
-   - **Estado Atual:** Ausente. A API está vulnerável a ataques massivos de dicionário.
+## 📅 Próximas Etapas (Fase 3: Features Avançadas)
 
-2. **Internacionalização do Frontend (Vue-i18n)**
-   - **Objetivo:** Permitir que a interface do usuário (botões, menus, labels) mude de idioma dinamicamente entre PT-BR e EN.
-   - **Estado Atual:** A interface está com textos fixos em Português.
-
-### Prioridade Média
-
-3. **Logging Estruturado (JSON)**
-   - **Objetivo:** Configurar o Logback para gerar logs em formato JSON em produção.
-   - **Motivação:** Facilita a ingestão e análise em ferramentas de observabilidade (ELK Stack, Datadog, CloudWatch).
-   - **Estado Atual:** Logs em texto plano padrão (Console).
-
-4. **Padronização RFC 7807 (Problem Details)**
-   - **Objetivo:** Adotar o padrão oficial "Problem Details for HTTP APIs" para todas as respostas de erro.
-   - **Estado Atual:** Formato customizado.
-
-### Prioridade Baixa
-
-5. **Cache de Segundo Nível (L2 Cache)**
-   - **Objetivo:** Implementar cache para entidades pouco voláteis (ex: `Course`, `Profile`) usando Caffeine ou Redis.
-   - **Motivação:** Reduzir carga no banco de dados em listagens frequentes.
-
-6. **Pipeline de CI/CD (GitHub Actions)**
-   - **Objetivo:** Automatizar testes e build a cada push.
-   - **Estado Atual:** Scripts manuais (`run.sh`).
+- [ ] **Notificações em Tempo Real:** Uso de WebSockets ou Server-Sent Events (SSE) para alertar usuários sobre novas respostas.
+- [ ] **Upload de Imagens:** Suporte a avatares de usuário e evidências nos tópicos utilizando armazenamento em nuvem (S3/MinIO).
+- [ ] **Dashboard Admin:** Visualização de estatísticas de uso, logs de auditoria e métricas de performance do cache Redis.
+- [ ] **Busca Avançada:** Integração com Elasticsearch ou Lucene para busca textual de alto desempenho nos tópicos.
