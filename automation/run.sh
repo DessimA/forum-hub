@@ -10,6 +10,7 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 COMPOSE_FILE="$PROJECT_ROOT/infra/docker-compose.yml"
 TEST_COMPOSE_FILE="$PROJECT_ROOT/infra/docker-compose.test.yml"
+ENV_FILE="$PROJECT_ROOT/.env"
 CURRENT_PROFILE="dev"
 
 if docker compose version >/dev/null 2>&1; then
@@ -32,7 +33,6 @@ execute_docker() {
     local service=$1
     local mode=$2
     local profile_flag=""
-    local ENV_FILE="$PROJECT_ROOT/.env"
     
     if [ "$CURRENT_PROFILE" == "prod" ]; then
         profile_flag="--profile prod"
@@ -118,7 +118,7 @@ while true; do
             
             # 1. Tenta parar tudo via docker compose (incluindo testes e orfãos)
             # Adiciona -v para remover volumes (limpeza completa de dados)
-            $DOCKER_CMD -f "$COMPOSE_FILE" -f "$TEST_COMPOSE_FILE" down -v --remove-orphans
+            $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$TEST_COMPOSE_FILE" down -v --remove-orphans
             
             # 2. Força bruta: Remove containers pelo nome explícito caso o compose falhe em rastreá-los
             # Isso garante que a rede seja liberada
