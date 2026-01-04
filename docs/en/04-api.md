@@ -75,6 +75,18 @@ Discussion management.
 - **GET** `/profile`: Logged-in user data.
 - **POST** `/{id}/block`: Administrative/Moderative block (`BlockRequestDTO`).
 
+### Favorites (`/api/v1/favorites`)
+- **POST** `/topics/{topicId}`: Add topic to user favorites.
+- **DELETE** `/topics/{topicId}`: Remove topic from favorites.
+- **GET** `/`: Paginated list of favorite topics.
+- **GET** `/topics/{topicId}/check`: Check if a specific topic is favorited by the current user.
+
+### Notifications (`/api/v1/notifications`)
+- **GET** `/`: List all user notifications (ordered by date).
+- **GET** `/unread-count`: Get the number of unread notifications.
+- **PATCH** `/{id}/read`: Mark a specific notification as read.
+- **PATCH** `/read-all`: Mark all notifications as read.
+
 ---
 
 ## 📐 DTO Patterns (Data Transfer Objects)
@@ -86,5 +98,7 @@ To ensure consistency and professionalism, **all API fields and annotations are 
 | `RegisterRequestDTO` | Registration data | `name`, `email`, `password` |
 | `TopicRequestDTO` | New topic | `title`, `message`, `courseId` |
 | `TopicDetailResponseDTO` | Topic read | `authorIsBlocked`, `answers` (List) |
+| `NotificationResponseDTO` | Notification data | `topicTitle`, `notificationType`, `isRead` |
+| `UnreadCountResponseDTO` | Notification count | `count` |
 
 This standardization facilitates integration with international clients and follows global Java development conventions.

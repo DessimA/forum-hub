@@ -27,6 +27,9 @@
   - Monólito Modular bem definido.
   - UUIDs (Binary 16) para alta performance de banco.
   - Paginação estável serializada via DTO.
+- **⭐ Favoritos e Notificações:**
+  - Gerenciamento de tópicos favoritos com persistência.
+  - Sistema de notificações em tempo real (polling) para novos eventos (respostas, fechamento, exclusão).
 - **⚡ Frontend Otimizado:**
   - Build com *Manual Chunking* para carregamento rápido.
   - Interface moderna com Material Design e tema Neon.

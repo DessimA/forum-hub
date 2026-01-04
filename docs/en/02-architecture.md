@@ -47,6 +47,8 @@ graph TD
         CourseController
         UserController
         AuditController
+        FavoriteController
+        NotificationController
     end
 
     subgraph "Core Modules (Service/Domain)"
@@ -56,6 +58,8 @@ graph TD
         Course[Course Module]
         User[User Module]
         Audit[Audit Module]
+        Favorite[Favorite Module]
+        Notification[Notification Module]
     end
 
     subgraph "Infrastructure"
@@ -114,7 +118,7 @@ graph TD
 
 ### 3. Database Migration (Flyway)
 - **Decision:** Use Flyway to manage the database schema in a versioned manner.
-- **Status:** Implemented (V1 to V5).
+- **Status:** Implemented (V1 to V6).
 
 ### 4. Use of Deterministic UUIDs
 - **Decision:** Use `BINARY(16)` for all primary IDs.

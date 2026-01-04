@@ -16,6 +16,14 @@ The interface is built entirely on **Vuetify 3**, ensuring all critical interact
 State is decentralized into stores:
 - **TopicStore:** Preserves `status`, `courseId`, and `title` filters during pagination.
 - **AuthStore:** Manages the JWT token and decodes roles for visual access control.
+- **FavoriteStore:** Maintains a set of favorite topic IDs for the current user.
+- **NotificationStore:** Manages real-time polling (every 30s) for unread counts and syncs UI state upon system events (like topic deletions).
+
+---
+
+## 🧩 Shared Components
+- **FavoriteButton:** Star icon toggle with persistent state across lists and details.
+- **NotificationBell:** Interactive bell in the navbar with unread count badge and notification history list.
 
 ---
 
@@ -28,7 +36,7 @@ To ensure fast initial loading, `vite.config.ts` is configured to split code int
 graph TD
     Main[index.html] -->|Loads| VendorVue[vendor-vue.js]
     Main -->|Loads| VendorVuetify[vendor-vuetify.js]
-    Main -->|Loads| AppCode[index.js (App Logic)]
+    Main -->|Loads| AppCode["index.js (App Logic)"]
     
     VendorVue --> VueCore
     VendorVue --> Pinia

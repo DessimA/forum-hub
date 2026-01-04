@@ -13,6 +13,10 @@ erDiagram
     USERS ||--o{ ANSWERS : writes
     COURSES ||--o{ TOPICS : categorizes
     TOPICS ||--o{ ANSWERS : contains
+    USERS ||--o{ USER_FAVORITES : favorites
+    TOPICS ||--o{ USER_FAVORITES : "is favorited"
+    USERS ||--o{ NOTIFICATIONS : recebe
+    TOPICS ||--o{ NOTIFICATIONS : dispara
 
     PROFILES {
         binary(16) id PK
@@ -30,6 +34,22 @@ erDiagram
         text suspension_justification
         timestamp created_at
         timestamp updated_at
+    }
+
+    USER_FAVORITES {
+        binary(16) user_id PK "FK"
+        binary(16) topic_id PK "FK"
+        timestamp created_at
+    }
+
+    NOTIFICATIONS {
+        binary(16) id PK
+        binary(16) user_id FK
+        binary(16) topic_id FK
+        varchar(50) notification_type "NEW_ANSWER, STATUS_CHANGED..."
+        text content
+        boolean is_read
+        timestamp created_at
     }
 
     COURSES {
@@ -82,6 +102,7 @@ O banco é 100% gerenciado via Flyway. O esquema evoluiu através das seguintes 
 3. **V3:** Sistema de bloqueio de usuários (`is_permanent_blocked`, `blocked_until`).
 4. **V4:** Auditoria e justificação de suspensão.
 5. **V5:** Índices de performance (`idx_topics_author`, `idx_answers_topic`, etc).
+6. **V6:** Sistema de Favoritos e Notificações.
 
 ## 🔍 Tipagem e IDs
 - **UUIDs:** Todos os IDs primários são `BINARY(16)` (UUID v4) para segurança e distribuição, não inteiros sequenciais.

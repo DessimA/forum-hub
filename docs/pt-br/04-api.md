@@ -75,6 +75,18 @@ Gerenciamento de discussões.
 - **GET** `/profile`: Dados do usuário logado.
 - **POST** `/{id}/block`: Bloqueio administrativo/moderativo (`BlockRequestDTO`).
 
+### Favoritos (`/api/v1/favorites`)
+- **POST** `/topics/{topicId}`: Adiciona tópico aos favoritos do usuário.
+- **DELETE** `/topics/{topicId}`: Remove tópico dos favoritos.
+- **GET** `/`: Listagem paginada de tópicos favoritos.
+- **GET** `/topics/{topicId}/check`: Verifica se um tópico está favoritado pelo usuário atual.
+
+### Notificações (`/api/v1/notifications`)
+- **GET** `/`: Listagem de notificações do usuário (ordenadas por data).
+- **GET** `/unread-count`: Obtém a contagem de notificações não lidas.
+- **PATCH** `/{id}/read`: Marca uma notificação específica como lida.
+- **PATCH** `/read-all`: Marca todas as notificações como lidas.
+
 ---
 
 ## 📐 Padrões de DTO (Data Transfer Objects)
@@ -86,5 +98,7 @@ Para garantir consistência e profissionalismo, **todos os campos e anotações 
 | `RegisterRequestDTO` | Dados de cadastro | `name`, `email`, `password` |
 | `TopicRequestDTO` | Novo tópico | `title`, `message`, `courseId` |
 | `TopicDetailResponseDTO` | Leitura de tópico | `authorIsBlocked`, `answers` (List) |
+| `NotificationResponseDTO` | Dados de notificação | `topicTitle`, `notificationType`, `isRead` |
+| `UnreadCountResponseDTO` | Contador de notificações | `count` |
 
 Esta padronização facilita a integração com clientes internacionais e segue as convenções globais de desenvolvimento Java.
