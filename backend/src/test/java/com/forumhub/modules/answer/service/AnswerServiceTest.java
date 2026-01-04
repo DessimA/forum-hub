@@ -35,7 +35,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AnswerServiceTest {
 
-    @InjectMocks
     private AnswerService answerService;
 
     @Mock private AnswerRepository answerRepository;
@@ -44,6 +43,8 @@ class AnswerServiceTest {
     @Mock private TopicValidationService topicValidationService;
     @Mock private AnswerMapper answerMapper;
     @Mock private AuditLogService auditLogService;
+    @Mock private com.forumhub.modules.favorite.repository.UserFavoriteRepository favoriteRepository;
+    @Mock private com.forumhub.modules.notification.service.NotificationService notificationService;
 
     private User currentUser;
     private User otherUser;
@@ -63,6 +64,8 @@ class AnswerServiceTest {
         UUID topicId = UUID.randomUUID();
         topic = Topic.builder().id(topicId).title("Test Topic").author(otherUser).status(TopicStatus.OPEN).build();
         answer = Answer.builder().id(UUID.randomUUID()).message("Test Answer").topic(topic).author(currentUser).solution(false).build();
+        
+        answerService = new AnswerService(answerRepository, topicRepository, securityService, topicValidationService, answerMapper, auditLogService, favoriteRepository, notificationService);
     }
 
     @Test
@@ -74,6 +77,7 @@ class AnswerServiceTest {
         when(topicRepository.findById(topic.getId())).thenReturn(Optional.of(topic));
         when(answerMapper.toEntity(requestDTO)).thenReturn(answer);
         when(answerRepository.save(any(Answer.class))).thenReturn(answer);
+        when(favoriteRepository.findAllByTopicId(topic.getId())).thenReturn(List.of());
         
         AnswerResponseDTO expectedResponse = new AnswerResponseDTO(answer.getId(), "Test Answer", topic.getId(), LocalDateTime.now(), "User Name", currentUser.getId(), "user@example.com", false);
         when(answerMapper.toResponseDTO(answer)).thenReturn(expectedResponse);

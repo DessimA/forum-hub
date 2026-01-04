@@ -3,8 +3,11 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/services/api'
 import { useAuthStore } from '@/stores/auth'
+import { useFavoriteStore } from '@/stores/favoriteStore'
+import FavoriteButton from '@/components/common/FavoriteButton.vue'
 
 const authStore = useAuthStore()
+const favoriteStore = useFavoriteStore()
 const route = useRoute()
 const router = useRouter()
 const topic = ref<any>(null)
@@ -230,7 +233,10 @@ const unblockUser = async (userId: number) => {
   }
 }
 
-onMounted(fetchTopic)
+onMounted(() => {
+  fetchTopic()
+  favoriteStore.loadUserFavorites()
+})
 </script>
 
 <template>
@@ -239,6 +245,7 @@ onMounted(fetchTopic)
       <div class="d-flex justify-space-between mb-4">
         <v-chip color="secondary" size="small" variant="tonal">{{ topic.course }}</v-chip>
         <div class="d-flex gap-2 align-center">
+          <FavoriteButton :topicId="topic.id" />
           <v-chip v-if="topic.authorIsBlocked || topic.authorBlockedUntil" color="error" size="x-small" variant="flat" prepend-icon="mdi-account-alert">AUTOR PUNIDO</v-chip>
           <v-chip v-if="topic.status === 'CLOSED'" color="grey" variant="tonal" size="small" class="font-weight-bold">
             FECHADO

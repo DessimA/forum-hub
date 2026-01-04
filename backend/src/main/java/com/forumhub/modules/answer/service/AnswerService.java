@@ -9,6 +9,9 @@ import com.forumhub.modules.topic.repository.TopicRepository;
 import com.forumhub.modules.topic.service.TopicValidationService;
 import com.forumhub.security.SecurityValidationService;
 import com.forumhub.modules.audit.service.AuditLogService;
+import com.forumhub.modules.favorite.repository.UserFavoriteRepository;
+import com.forumhub.modules.notification.entity.NotificationType;
+import com.forumhub.modules.notification.service.NotificationService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -30,6 +33,8 @@ public class AnswerService {
     private final TopicValidationService topicValidationService;
     private final AnswerMapper mapper;
     private final AuditLogService auditLogService;
+    private final UserFavoriteRepository favoriteRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     public AnswerResponseDTO create(@NonNull UUID topicId, @NonNull AnswerRequestDTO answerRequest) {
@@ -42,8 +47,20 @@ public class AnswerService {
         var answer = mapper.toEntity(answerRequest);
         answer.setTopic(topic);
         answer.setAuthor(author);
+        var savedAnswer = answerRepository.save(answer);
 
-        return mapper.toResponseDTO(answerRepository.save(answer));
+        favoriteRepository.findAllByTopicId(topic.getId()).forEach(fav -> {
+            if (!fav.getUser().getId().equals(author.getId())) {
+                notificationService.createNotification(
+                    fav.getUser().getId(),
+                    topic.getId(),
+                    NotificationType.NEW_ANSWER,
+                    "Nova resposta em: " + topic.getTitle()
+                );
+            }
+        });
+
+        return mapper.toResponseDTO(savedAnswer);
     }
 
     @Transactional

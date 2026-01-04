@@ -2,6 +2,7 @@
 import { useAuthStore } from '@/stores/auth'
 import { useRouter, useRoute } from 'vue-router'
 import { computed } from 'vue'
+import NotificationBell from '@/components/common/NotificationBell.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -39,6 +40,8 @@ const handleLogout = () => {
       Novo Tópico
     </v-btn>
 
+    <NotificationBell v-if="authStore.isAuthenticated" />
+
     <v-menu v-if="authStore.isAuthenticated">
       <template v-slot:activator="{ props }">
         <v-avatar v-bind="props" color="surface" class="cursor-pointer border-subtle" size="40">
@@ -51,8 +54,13 @@ const handleLogout = () => {
         <v-list-item v-if="authStore.isAdmin" prepend-icon="mdi-shield-check" title="Auditoria" to="/admin/logs"></v-list-item>
         <v-divider v-if="authStore.isAdmin"></v-divider>
         <v-list-item 
+          prepend-icon="mdi-star-outline" 
+          title="Meus Favoritos" 
+          to="/favorites"
+        ></v-list-item>
+        <v-list-item 
           prepend-icon="mdi-account-outline" 
-          title="Meu Perfil" 
+          title="Meu Perfil"  
           value="profile"
           @click="router.push('/profile')"
         ></v-list-item>

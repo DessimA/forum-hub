@@ -32,6 +32,8 @@ class TopicServiceUniquenessTest {
     @Mock private TopicMapper topicMapper;
     @Mock private AnswerMapper answerMapper;
     @Mock private AuditLogService auditLogService;
+    @Mock private com.forumhub.modules.favorite.repository.UserFavoriteRepository favoriteRepository;
+    @Mock private com.forumhub.modules.notification.service.NotificationService notificationService;
     
     private TopicService service;
 
@@ -45,7 +47,9 @@ class TopicServiceUniquenessTest {
             validationService,
             topicMapper,
             answerMapper,
-            auditLogService
+            auditLogService,
+            favoriteRepository,
+            notificationService
         );
     }
 

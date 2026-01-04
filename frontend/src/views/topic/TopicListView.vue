@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useTopicStore } from '@/stores/topic'
+import { useFavoriteStore } from '@/stores/favoriteStore'
 import api from '@/services/api'
+import FavoriteButton from '@/components/common/FavoriteButton.vue'
 
 const topicStore = useTopicStore()
+const favoriteStore = useFavoriteStore()
 
 const valid = ref(false)
 const saving = ref(false)
@@ -81,6 +84,7 @@ const formatDate = (dateString: string) => {
 
 onMounted(() => {
   topicStore.fetchTopics()
+  favoriteStore.loadUserFavorites()
   fetchCourses()
 })
 </script>
@@ -186,13 +190,13 @@ onMounted(() => {
                 </v-chip>
               </div>
             </div>
-            <v-chip :color="getStatusColor(topic.status)" variant="tonal" size="small" class="font-weight-bold status-chip">
-              {{ getStatusText(topic.status) }}
-            </v-chip>
-          </div>
-          
-          <v-card-text class="px-0 pb-0 pt-4 text-truncate text-grey-lighten-2">
-            {{ topic.message }}
+                          <v-chip :color="getStatusColor(topic.status)" variant="tonal" size="small" class="font-weight-bold status-chip">
+                          {{ getStatusText(topic.status) }}
+                        </v-chip>
+                        <FavoriteButton :topicId="topic.id" class="ml-2" />
+                      </div>
+                      
+                      <v-card-text class="px-0 pb-0 pt-4 text-truncate text-grey-lighten-2">            {{ topic.message }}
           </v-card-text>
         </v-card>
       </v-col>

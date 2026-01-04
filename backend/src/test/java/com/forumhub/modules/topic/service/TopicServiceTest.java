@@ -33,7 +33,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class TopicServiceTest {
 
-    @InjectMocks private TopicService service;
+    private TopicService service;
     @Mock private TopicRepository topicRepository;
     @Mock private CourseRepository courseRepository;
     @Mock private AnswerRepository answerRepository;
@@ -42,6 +42,8 @@ class TopicServiceTest {
     @Mock private TopicMapper topicMapper;
     @Mock private AnswerMapper answerMapper;
     @Mock private AuditLogService auditLogService;
+    @Mock private com.forumhub.modules.favorite.repository.UserFavoriteRepository favoriteRepository;
+    @Mock private com.forumhub.modules.notification.service.NotificationService notificationService;
 
     private User user;
     private Course course;
@@ -52,6 +54,8 @@ class TopicServiceTest {
         user = User.builder().id(UUID.randomUUID()).email("author@test.com").build();
         course = new Course(UUID.randomUUID(), "Course", "Cat", null);
         topic = Topic.builder().id(UUID.randomUUID()).title("Title").message("Msg").author(user).course(course).build();
+        
+        service = new TopicService(topicRepository, courseRepository, answerRepository, securityService, validationService, topicMapper, answerMapper, auditLogService, favoriteRepository, notificationService);
     }
 
     @Test
@@ -89,10 +93,13 @@ class TopicServiceTest {
     void shouldDeleteTopic() {
         UUID id = topic.getId();
         when(topicRepository.findById(id)).thenReturn(Optional.of(topic));
+        when(favoriteRepository.findAllByTopicId(id)).thenReturn(java.util.Collections.emptyList());
 
         service.delete(id, "Justification");
 
         verify(topicRepository).delete(topic);
+        verify(favoriteRepository).deleteAllByTopicId(id);
+        verify(answerRepository).deleteAllByTopicId(id);
         verify(auditLogService).logAction(eq("DELETE"), eq("TOPIC"), eq(id), anyString(), eq("Justification"));
     }
 }

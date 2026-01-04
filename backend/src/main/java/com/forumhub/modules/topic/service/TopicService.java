@@ -10,6 +10,10 @@ import com.forumhub.modules.topic.model.TopicStatus;
 import com.forumhub.modules.topic.repository.TopicRepository;
 import com.forumhub.security.SecurityValidationService;
 import com.forumhub.modules.audit.service.AuditLogService;
+import com.forumhub.modules.favorite.entity.UserFavorite;
+import com.forumhub.modules.favorite.repository.UserFavoriteRepository;
+import com.forumhub.modules.notification.entity.NotificationType;
+import com.forumhub.modules.notification.service.NotificationService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -37,6 +41,8 @@ public class TopicService {
     private final TopicMapper topicMapper;
     private final AnswerMapper answerMapper;
     private final AuditLogService auditLogService;
+    private final UserFavoriteRepository favoriteRepository;
+    private final NotificationService notificationService;
 
     @Transactional
     @CacheEvict(value = "topics", allEntries = true)
@@ -114,7 +120,18 @@ public class TopicService {
         
         topic.setStatus(TopicStatus.CLOSED);
         log.info("Topic {} closed by user", id);
-        return topicMapper.toResponseDTO(topicRepository.save(topic));
+        var savedTopic = topicRepository.save(topic);
+
+        favoriteRepository.findAllByTopicId(savedTopic.getId()).forEach(fav -> 
+            notificationService.createNotification(
+                fav.getUser().getId(),
+                savedTopic.getId(),
+                NotificationType.STATUS_CHANGED,
+                "Tópico fechado: " + savedTopic.getTitle()
+            )
+        );
+
+        return topicMapper.toResponseDTO(savedTopic);
     }
 
     @Transactional
@@ -127,7 +144,18 @@ public class TopicService {
         
         topic.setStatus(TopicStatus.OPEN);
         log.info("Topic {} reopened by user", id);
-        return topicMapper.toResponseDTO(topicRepository.save(topic));
+        var savedTopic = topicRepository.save(topic);
+
+        favoriteRepository.findAllByTopicId(savedTopic.getId()).forEach(fav -> 
+            notificationService.createNotification(
+                fav.getUser().getId(),
+                savedTopic.getId(),
+                NotificationType.STATUS_CHANGED,
+                "Tópico reaberto: " + savedTopic.getTitle()
+            )
+        );
+
+        return topicMapper.toResponseDTO(savedTopic);
     }
 
     @Transactional
@@ -138,25 +166,37 @@ public class TopicService {
         
         securityService.validateOwnerOrModerator(topic.getAuthor());
         
-        // 1. Audit and delete answers before topic deletion
-        var answers = answerRepository.findAllByTopicId(topic.getId());
-        for (var answer : answers) {
-            String answerLog = String.format("Message: %s | Author: %s | TopicId: %s", 
-                    answer.getMessage(), answer.getAuthor().getEmail(), topic.getId().toString());
-            auditLogService.logAction("DELETE", "ANSWER", answer.getId(), answerLog, "Cascade delete from topic: " + topic.getTitle());
-            
-            // Explicitly delete answer to clear Hibernate session state
-            answerRepository.delete(answer);
-        }
-
-        // 2. Audit topic
+        // 1. Audit topic
         String logContent = String.format("Title: %s | Message: %s | Author: %s | CourseId: %s", 
                 topic.getTitle(), topic.getMessage(), topic.getAuthor().getEmail(), topic.getCourse().getId().toString());
         
         auditLogService.logAction("DELETE", "TOPIC", topic.getId(), logContent, justification);
         
-        // Ensure changes are flushed before final delete if necessary, 
-        // but topicRepository.delete(topic) will handle it.
+        // 2. Audit and delete answers
+        var answers = answerRepository.findAllByTopicId(topic.getId());
+        for (var answer : answers) {
+            String answerLog = String.format("Message: %s | Author: %s | TopicId: %s", 
+                    answer.getMessage(), answer.getAuthor().getEmail(), topic.getId().toString());
+            auditLogService.logAction("DELETE", "ANSWER", answer.getId(), answerLog, "Cascade delete from topic: " + topic.getTitle());
+        }
+        answerRepository.deleteAllByTopicId(id);
+
+        // 3. Notify users who favorited (pass null for topicId to avoid FK issues)
+        var favoriters = favoriteRepository.findAllByTopicId(topic.getId());
+        favoriters.forEach(fav -> 
+            notificationService.createNotification(
+                fav.getUser().getId(),
+                null, 
+                NotificationType.TOPIC_DELETED,
+                "Tópico deletado: " + topic.getTitle()
+            )
+        );
+
+        // 3. Clear associations manually to avoid FK constraint issues
+        favoriteRepository.deleteAllByTopicId(id);
+        
+        // 4. Final delete
         topicRepository.delete(topic);
+        log.info("Topic {} and all its associations were deleted.", id);
     }
 }
