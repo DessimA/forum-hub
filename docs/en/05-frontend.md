@@ -3,12 +3,25 @@
 ForumHub's frontend prioritizes clarity and efficiency, using the latest technologies from the Vue ecosystem.
 
 ## 🎨 User Experience (UX)
-The interface is built entirely on **Vuetify 3**, ensuring all critical interactions occur through integrated components.
+The interface uses the **Deep Dark** theme, optimizing the experience in low-light environments and following mobile-first standards.
 
-### Interface Patterns:
-- **Dynamic Navigation:** Synchronization of filters and sorting directly with the URL.
-- **Modal Workflows:** Edit and delete actions use `v-dialog`.
-- **Non-Intrusive Feedback:** Notifications via `v-snackbar`.
+### Design System
+| Element | Specification |
+| :--- | :--- |
+| **Main Palette** | Pure Black (#000000) and Sky Blue (#38BDF8) |
+| **Typography** | Inter (or modern Sans-Serif standard) |
+| **Borders** | `border-radius: 4px` on all buttons and inputs |
+| **Transitions** | 150ms ease-in-out for hover interactions |
+
+### Responsive Behavior
+- **Mobile (< 960px):**
+  - Topics displayed in a single column (full-width).
+  - Floating or simplified "New Topic" button in the navbar.
+  - Sidebar hidden behind a hamburger menu.
+- **Desktop (> 1280px):**
+  - Topic grid in 3 columns.
+  - Direct navigation links in the App Bar.
+  - 1400px max-width to prevent visual dispersion.
 
 ---
 
@@ -16,14 +29,15 @@ The interface is built entirely on **Vuetify 3**, ensuring all critical interact
 State is decentralized into stores:
 - **TopicStore:** Preserves `status`, `courseId`, and `title` filters during pagination.
 - **AuthStore:** Manages the JWT token and decodes roles for visual access control.
-- **FavoriteStore:** Maintains a set of favorite topic IDs for the current user.
-- **NotificationStore:** Manages real-time polling (every 30s) for unread counts and syncs UI state upon system events (like topic deletions).
+- **FavoriteStore:** Maintains a local `Set` of favorited IDs to ensure the star icon is instantly synced between the general list and the details page.
+- **NotificationStore:** Polls every 30 seconds to update the alert counter. Clicking a notification marks it as read and navigates to the target topic.
 
 ---
 
 ## 🧩 Shared Components
-- **FavoriteButton:** Star icon toggle with persistent state across lists and details.
-- **NotificationBell:** Interactive bell in the navbar with unread count badge and notification history list.
+- **FavoriteButton:** Reactive button that toggles favorite state with immediate visual feedback.
+- **NotificationBell:** Alert centralizer in the Navbar with "Mark all as read" support.
+- **AnimatedLogo:** Optimized SVG logo with subtle entry animations.
 
 ---
 

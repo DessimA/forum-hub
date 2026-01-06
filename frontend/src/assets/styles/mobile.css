@@ -1,0 +1,79 @@
+/* Mobile-First Design System Utilities */
+
+/* Base Transitions */
+.v-navigation-drawer {
+  transition: transform 0.2s ease-in-out !important;
+}
+
+/* Typography Mobile (0-768px) */
+@media (max-width: 768px) {
+  .mobile-h1 { 
+    font-size: 20px !important; 
+    line-height: 1.2 !important;
+    font-weight: 700 !important;
+  }
+  .mobile-h2 { 
+    font-size: 18px !important; 
+    line-height: 1.2 !important;
+    font-weight: 600 !important;
+  }
+  .mobile-body { 
+    font-size: 14px !important; 
+    line-height: 1.5 !important;
+  }
+  .mobile-caption { 
+    font-size: 11px !important; 
+    line-height: 1.4 !important;
+  }
+  
+  /* Spacing Mobile */
+  .mobile-p-1 { padding: 4px !important; }
+  .mobile-p-2 { padding: 8px !important; }
+  .mobile-p-3 { padding: 12px !important; }
+  .mobile-gap-1 { gap: 4px !important; }
+  .mobile-gap-2 { gap: 8px !important; }
+  
+  /* Touch Targets */
+  .mobile-btn { 
+    min-height: 44px !important; 
+    min-width: 44px !important; 
+  }
+  .mobile-input { 
+    height: 44px !important; 
+  }
+  .mobile-input .v-field__input {
+    font-size: 16px !important; /* Prevents iOS auto-zoom */
+  }
+  
+  /* Truncate Logic */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Layout Helpers */
+  .w-mobile-100 { width: 100% !important; }
+  .sticky-bottom-mobile {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgb(var(--v-theme-surface)) !important; 
+    border-top: 1px solid rgb(var(--v-border-color));
+  }
+}
+
+/* Global Card Styling Sync */
+.v-card--variant-outlined, .v-navigation-drawer {
+  border: 1px solid rgb(var(--v-border-color)) !important;
+  background-color: rgba(var(--v-theme-surface), 0.9) !important;
+}
+
+.v-dialog > .v-overlay__content > .v-card {
+  background-color: rgb(var(--v-theme-surface)) !important;
+  color: rgb(var(--v-theme-text-primary)) !important;
+}

@@ -4,39 +4,49 @@ import TheNavbar from '../layout/TheNavbar.vue'
 import { createTestingPinia } from '@pinia/testing'
 
 // Mock Vuetify minimal
-const VAppBar = { template: '<header><slot /></header>' }
-const VAppBarTitle = { template: '<div><slot /></div>' }
-const VSpacer = { template: '<div />' }
-const VBtn = { template: '<button @click="$emit(\'click\')"><slot /></button>' }
-const VMenu = { template: '<div><slot name="activator" :props="{}" /><slot /></div>' }
-const VAvatar = { template: '<div v-bind="$attrs"><slot /></div>' }
-const VIcon = { template: '<i />' }
-const VList = { template: '<div><slot /></div>' }
-const VListItem = { props: ['to'], template: '<div :to="to"><slot /></div>' }
-const VDivider = { template: '<hr />' }
+const VAppBar = { template: '<header v-bind="$attrs"><slot /></header>' }
+const VAppBarTitle = { template: '<div v-bind="$attrs"><slot /></div>' }
+const VAppBarNavIcon = { template: '<button v-bind="$attrs" @click="$emit(\'click\')"><slot /></button>' }
+const VNavigationDrawer = { props: ['modelValue'], template: '<div v-bind="$attrs"><slot v-if="modelValue" /></div>' }
+const VSpacer = { template: '<div v-bind="$attrs" />' }
+const VBtn = { 
+  template: '<button v-bind="$attrs" @click="$emit(\'click\')"><slot /></button>'
+}
+const VAvatar = { template: '<div v-bind="$attrs" @click="$emit(\'click\')"><slot /></div>' }
+const VIcon = { template: '<i v-bind="$attrs" />' }
+const VList = { template: '<div v-bind="$attrs"><slot /></div>' }
+const VListItem = { props: ['to'], template: '<div v-bind="$attrs" :to="to"><slot /></div>' }
+const VDivider = { template: '<hr v-bind="$attrs" />' }
+const NotificationBell = { template: '<div />' }
+const ThemeToggle = { template: '<div />' }
+const AnimatedLogo = { template: '<div class="animated-logo">FórumHub</div>' }
 
 const globalComponents = {
-  VAppBar, VAppBarTitle, VSpacer, VBtn, VMenu, VAvatar, VIcon, VList, VListItem, VDivider
+  VAppBar, VAppBarTitle, VAppBarNavIcon, VNavigationDrawer, VSpacer, VBtn, VAvatar, VIcon, VList, VListItem, VDivider,
+  NotificationBell, ThemeToggle, AnimatedLogo
 }
 
 const mockPush = vi.fn()
-let mockRoutePath = '/'
+let mockRoutePath = '/topics'
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: mockPush }),
   useRoute: () => ({ path: mockRoutePath })
 }))
 
+import { createVuetify } from 'vuetify'
+const vuetify = createVuetify()
+
 describe('TheNavbar', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockRoutePath = '/'
+    mockRoutePath = '/topics'
   })
 
   it('renders correctly', () => {
     const wrapper = mount(TheNavbar, {
       global: {
-        plugins: [createTestingPinia()],
+        plugins: [createTestingPinia(), vuetify],
         components: globalComponents
       }
     })
@@ -47,42 +57,41 @@ describe('TheNavbar', () => {
     const wrapper = mount(TheNavbar, {
       global: {
         plugins: [createTestingPinia({
-          initialState: { auth: { user: { name: 'User' }, token: 'abc' } }
-        })],
+          initialState: { auth: { token: 'abc' } }
+        }), vuetify],
         components: globalComponents
       }
     })
-    expect(wrapper.findComponent(VMenu).exists()).toBe(true)
+    expect(wrapper.find('[data-cy="user-avatar"]').exists()).toBe(true)
   })
 
-  it('emits open-new-topic event only on home path', async () => {
+  it('emits open-new-topic event only on topics path', async () => {
     const wrapper = mount(TheNavbar, {
       global: {
         plugins: [createTestingPinia({
-          initialState: { auth: { user: { name: 'User' }, token: 'abc' } }
-        })],
+          initialState: { auth: { token: 'abc' } }
+        }), vuetify],
         components: globalComponents
       }
     })
     
-    const btn = wrapper.find('button') // Novo Tópico button
+    const btn = wrapper.find('[data-cy="nav-new-topic"]') 
     await btn.trigger('click')
     expect(wrapper.emitted('open-new-topic')).toBeTruthy()
   })
 
-  it('hides new topic button when not on home path', () => {
+  it('hides new topic button when not on topics path', () => {
     mockRoutePath = '/admin/courses'
     const wrapper = mount(TheNavbar, {
       global: {
         plugins: [createTestingPinia({
-          initialState: { auth: { user: { name: 'User' }, token: 'abc' } }
-        })],
+          initialState: { auth: { token: 'abc' } }
+        }), vuetify],
         components: globalComponents
       }
     })
     
-    const buttons = wrapper.findAll('button')
-    const hasNewTopicBtn = buttons.some(b => b.text().includes('Novo Tópico'))
+    const hasNewTopicBtn = wrapper.find('[data-cy="nav-new-topic"]').exists()
     expect(hasNewTopicBtn).toBe(false)
   })
 })

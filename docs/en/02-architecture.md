@@ -131,33 +131,64 @@ graph TD
 
 ---
 
+## 🎨 Design System and UI/UX
+
+The application adopts a **Deep Dark** aesthetic, focusing on readability and reducing eye fatigue, using a rigorous Design System.
+
+### Visual Identity
+- **Background:** Pure Black (#000000).
+- **Accents:** Sky Blue (#38BDF8).
+- **Surface:** Dark Grey (#111111).
+- **Border Radius:** Standard 4px for buttons and cards.
+
+### Responsive Strategy (Mobile-First)
+- **Adaptive Navigation:** Desktop uses a fixed bar with links; Mobile uses a hamburger menu with a `v-navigation-drawer`.
+- **Card Layout:** A dynamic grid that switches from 3 columns (Desktop) to 1 column (Mobile), ensuring an adequate touch area (minimum 36px height for fields).
+
+---
+
 ## 🔌 Critical Data Flows
 
-### 1. Secure Topic Creation
-This flow demonstrates security validation and persistence.
+### 1. Notification System
+The system uses a **Smart Polling** strategy on the frontend to keep the user updated without overloading the server.
 
 ```mermaid
 sequenceDiagram
-    participant Client as Frontend/Swagger
-    participant Filter as SecurityFilter
-    participant API as TopicController
-    participant Service as TopicService
+    participant User as Frontend (Pinia)
+    participant API as NotificationController
     participant DB as MySQL
 
-    Client->>Filter: POST /topics (Header: Bearer Token)
-    Filter->>Filter: Validates JWT Signature
-    Filter->>Filter: Checks User status (Active?)
-    
-    alt Invalid Token or Blocked User
-        Filter-->>Client: 403 Forbidden
-    else Valid Token
-        Filter->>API: Forward Request (User Context)
-        API->>Service: create(TopicRequestDTO)
-        Service->>DB: Repository.save(Topic)
-        DB-->>Service: Topic Saved (UUID)
-        Service-->>API: TopicResponseDTO
-        API-->>Client: 201 Created (JSON)
+    rect rgb(20, 20, 20)
+    Note right of User: Polling every 30s
+    User->>API: GET /unread-count
+    API->>DB: countByUserIdAndIsReadFalse()
+    DB-->>API: Total: 5
+    API-->>User: { count: 5 }
+    User->>User: Updates Badge on Navbar
     end
+```
+
+### 2. Auditing and Restoration
+Flow for protection against accidental or malicious deletion.
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Service as TopicService
+    participant Audit as AuditLogService
+    participant DB as MySQL
+
+    Admin->>Service: DELETE /topics/{id}
+    Service->>Audit: logDeletion(TopicData)
+    Audit->>DB: INSERT INTO audit_logs (snapshot_json)
+    Service->>DB: Physical DELETE (or Logical)
+    
+    Note over Admin, DB: Later...
+    
+    Admin->>Audit: POST /admin/logs/{id}/restore
+    Audit->>DB: SELECT snapshot_json
+    Audit->>Service: reconstruct(TopicData)
+    Service->>DB: INSERT (with original UUID)
 ```
 
 ---

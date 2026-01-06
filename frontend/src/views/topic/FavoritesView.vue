@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import api from '@/services/api'
 import FavoriteButton from '@/components/common/FavoriteButton.vue'
 import { useFavoriteStore } from '@/stores/favoriteStore'
+import BaseChip from '@/components/base/BaseChip.vue'
 
+const router = useRouter()
 const favoriteStore = useFavoriteStore()
 const topics = ref<any[]>([])
 const loading = ref(false)
@@ -16,7 +19,7 @@ const pagination = ref({
 const fetchFavorites = async (page = 0) => {
   loading.value = true
   try {
-    const response = await api.get(`/favorites?page=${page}&size=10&sort=createdAt,desc`)
+    const response = await api.get(`/favorites?page=${page}&size=12&sort=createdAt,desc`)
     topics.value = response.data.content
     pagination.value = {
       page: response.data.number + 1,
@@ -33,27 +36,14 @@ const fetchFavorites = async (page = 0) => {
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'OPEN': return 'primary'
-    case 'CLOSED': return 'grey'
+    case 'CLOSED': return 'warning'
     case 'RESOLVED': return 'success'
     default: return 'primary'
   }
 }
 
-const getStatusText = (status: string) => {
-  switch (status) {
-    case 'OPEN': return 'ABERTO'
-    case 'CLOSED': return 'FECHADO'
-    case 'RESOLVED': return 'RESOLVIDO'
-    default: return status
-  }
-}
-
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  })
+  return new Date(dateString).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
 onMounted(() => {
@@ -63,84 +53,100 @@ onMounted(() => {
 </script>
 
 <template>
-  <v-container class="py-10">
-    <v-row>
-      <v-col cols="12" class="d-flex align-center justify-space-between mb-6">
-        <h2 class="text-h4 font-weight-bold text-white">Meus Favoritos</h2>
-        <v-chip color="yellow-darken-2" variant="outlined" label icon="mdi-star">
-          {{ pagination.totalElements }} Favoritos
-        </v-chip>
-      </v-col>
+  <v-container class="py-8 py-md-12 px-4 px-md-12 max-w-[1400px] mx-auto">
+    <!-- Header -->
+    <header class="mb-10 mb-md-16 px-1">
+      <div class="d-flex align-center justify-space-between">
+        <div>
+          <h1 class="text-responsive-h1 text-text-primary font-weight-bold mb-2">Meus Favoritos</h1>
+          <p class="text-text-secondary text-sm">Tópicos que você marcou para acompanhar</p>
+        </div>
+        <div class="text-right hidden-sm-and-down">
+          <div class="text-h3 font-weight-bold text-primary leading-none mb-1">{{ pagination.totalElements }}</div>
+          <div class="text-[10px] uppercase font-bold text-secondary tracking-widest opacity-70">Tópicos Salvos</div>
+        </div>
+      </div>
+    </header>
 
-      <v-col v-if="loading" cols="12" class="text-center py-10">
-        <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
-      </v-col>
+    <div v-if="loading" class="text-center py-16">
+      <v-progress-circular indeterminate color="primary" size="48"></v-progress-circular>
+    </div>
 
-      <v-col v-else-if="topics.length === 0" cols="12" class="text-center py-10">
-        <v-icon size="64" color="grey" class="mb-4">mdi-star-off</v-icon>
-        <h3 class="text-h5 text-grey">Você ainda não tem favoritos.</h3>
-        <v-btn to="/" color="primary" variant="text" class="mt-2">Explorar Tópicos</v-btn>
-      </v-col>
+    <div v-else-if="topics.length === 0" class="text-center py-20 bg-surface border border-dashed rounded-lg opacity-60">
+      <v-icon size="80" color="secondary" class="mb-6 opacity-30">mdi-star-off-outline</v-icon>
+      <h3 class="text-xl font-weight-bold text-text-primary mb-3">Nenhum favorito ainda</h3>
+      <p class="text-base text-text-secondary mb-10">Explore os tópicos e clique na estrela para salvar aqui.</p>
+      <v-btn to="/topics" color="primary" variant="flat" height="48" class="font-weight-bold px-10 text-black rounded-pill">
+        EXPLORAR COMUNIDADE
+      </v-btn>
+    </div>
 
-      <v-col v-else v-for="topic in topics" :key="topic.id" cols="12">
+    <!-- Grid -->
+    <v-row v-else class="ga-4 ga-md-6">
+      <v-col v-for="topic in topics" :key="topic.id" cols="12" sm="6" lg="4" class="pa-0">
         <v-card 
-          class="topico-card mb-4 pa-4" 
-          color="surface" 
-          hover 
-          variant="flat"
-          :to="'/topics/' + topic.id"
+          variant="outlined"
+          class="topic-card pa-6 pa-md-8 bg-surface border-all transition-fast h-100 d-flex flex-column rounded-lg elevation-1" 
+          @click="router.push('/topics/' + topic.id)"
         >
-          <div class="d-flex justify-space-between align-start">
-            <div>
-              <h3 class="text-h5 font-weight-bold mb-2 text-white">{{ topic.title }}</h3>
-              <div class="d-flex align-center gap-4 text-body-2 text-grey-lighten-1">
-                <span class="d-flex align-center">
-                  <v-icon size="small" class="mr-1">mdi-account-circle-outline</v-icon>
-                  {{ topic.author }}
-                </span>
-                <span class="d-flex align-center ml-4">
-                  <v-icon size="small" class="mr-1">mdi-calendar-range</v-icon>
-                  {{ formatDate(topic.createdAt) }}
-                </span>
-                <v-chip size="x-small" color="secondary" variant="tonal" class="ml-4">
-                  {{ topic.course }}
-                </v-chip>
-              </div>
-            </div>
-            <div class="d-flex align-center">
-                <v-chip :color="getStatusColor(topic.status)" variant="tonal" size="small" class="font-weight-bold status-chip mr-2">
-                  {{ getStatusText(topic.status) }}
-                </v-chip>
-                <FavoriteButton :topicId="topic.id" />
-            </div>
+          <div class="d-flex justify-space-between align-start mb-5">
+            <BaseChip color="secondary" variant="tonal" class="text-[10px] uppercase font-bold px-2">
+              {{ topic.course }}
+            </BaseChip>
+            <BaseChip :color="getStatusColor(topic.status)" class="text-[10px] font-bold px-2">
+              {{ topic.status }}
+            </BaseChip>
           </div>
           
-          <v-card-text class="px-0 pb-0 pt-4 text-truncate text-grey-lighten-2">
-            {{ topic.message }}
-          </v-card-text>
+          <h3 class="text-lg font-bold mb-4 text-text-primary line-clamp-2 leading-tight">{{ topic.title }}</h3>
+          
+          <v-spacer></v-spacer>
+
+          <div class="d-flex align-center justify-space-between mt-auto pt-5 border-t">
+            <div class="d-flex align-center text-[11px] text-text-secondary">
+              <v-avatar size="20" color="primary" class="mr-2 text-white font-bold text-[8px]">
+                {{ topic.author.charAt(0).toUpperCase() }}
+              </v-avatar>
+              <span class="text-truncate font-weight-medium" style="max-width: 100px;">{{ topic.author }}</span>
+              <span class="mx-2 opacity-30">•</span>
+              <span>{{ formatDate(topic.createdAt) }}</span>
+            </div>
+            <FavoriteButton :topicId="topic.id" density="compact" size="20" @click.stop />
+          </div>
         </v-card>
       </v-col>
-
-      <v-col cols="12" class="d-flex justify-center mt-6">
-        <v-pagination
-          v-if="pagination.totalPages > 1"
-          v-model="pagination.page"
-          :length="pagination.totalPages"
-          @update:model-value="(p) => fetchFavorites(p - 1)"
-          color="primary"
-        ></v-pagination>
-      </v-col>
     </v-row>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-center mt-12 pb-16">
+      <v-pagination
+        v-if="pagination.totalPages > 1"
+        v-model="pagination.page"
+        :length="pagination.totalPages"
+        :total-visible="5"
+        density="comfortable"
+        active-color="primary"
+        @update:model-value="(p) => fetchFavorites(p - 1)"
+      ></v-pagination>
+    </div>
   </v-container>
 </template>
 
 <style scoped>
-.topico-card { 
-  transition: all 0.2s ease; 
-  border: 1px solid rgba(255, 255, 255, 0.05) !important; 
+.topic-card {
+  transition: all 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-color: rgba(var(--v-border-color), 0.1) !important;
 }
-.topico-card:hover { 
-  border: 1px solid rgba(0, 240, 255, 0.2) !important; 
-  background-color: rgba(255, 255, 255, 0.02) !important;
+.topic-card:hover {
+  transform: translateY(-4px);
+  border-color: rgba(var(--v-theme-primary), 0.4) !important;
+  background-color: rgba(var(--v-theme-primary), 0.03) !important;
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.5) !important;
 }
+.border-t {
+  border-top: 1px solid rgba(var(--v-border-color), 0.1) !important;
+}
+.border-all { border: 1px solid rgba(var(--v-border-color), 0.1) !important; }
+.ga-4 { gap: 16px; }
+.ga-6 { gap: 24px; }
 </style>

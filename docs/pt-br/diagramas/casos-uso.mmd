@@ -8,11 +8,14 @@ graph TD
         User -->|Criar/Ver| Topics[Tópicos]
         User -->|Responder| Answers[Respostas]
         User -->|Marcar| Solution[Solução]
+        User -->|Favoritar| Favorites[Tópicos Favoritos]
+        User -->|Receber| Notifications[Notificações]
     end
     
     subgraph "Ações de Moderação"
         Moderator -->|Excluir| Delete[Excluir Tópico/Resposta]
         Moderator -->|Suspender| Block[Bloquear Usuário 24h]
+        Moderator -->|Restaurar| Restore[Restaurar Itens Deletados]
     end
     
     subgraph "Ações Administrativas"

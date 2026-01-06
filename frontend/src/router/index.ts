@@ -5,6 +5,12 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
+      path: '/',
+      name: 'Landing',
+      component: () => import('@/views/LandingPage.vue'),
+      meta: { public: true }
+    },
+    {
       path: '/login',
       name: 'Login',
       component: () => import('@/views/auth/LoginView.vue'),
@@ -45,8 +51,8 @@ const router = createRouter({
       component: () => import('@/views/topic/FavoritesView.vue')
     },
     {
-      path: '/',
-      name: 'Home',
+      path: '/topics',
+      name: 'Topics',
       component: () => import('@/views/topic/TopicListView.vue')
     },
     {
@@ -61,12 +67,23 @@ const router = createRouter({
 router.beforeEach((to, _, next) => {
   const authStore = useAuthStore()
   
-  if (!to.meta.public && !authStore.isAuthenticated) {
-    next('/login')
-  } else if (to.name === 'Login' && authStore.isAuthenticated) {
-    next('/')
+  // Public routes: Landing, Login, Register
+  const isPublicRoute = to.meta.public === true
+
+  if (authStore.isAuthenticated) {
+    // Authenticated user trying to access Landing, Login or Register
+    if (isPublicRoute) {
+      next('/topics')
+    } else {
+      next()
+    }
   } else {
-    next()
+    // Unauthenticated user trying to access private route
+    if (!isPublicRoute) {
+      next('/login')
+    } else {
+      next()
+    }
   }
 })
 

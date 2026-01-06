@@ -13,7 +13,9 @@ Oferecer uma plataforma estável e segura onde usuários podem criar tópicos, r
 - **Infraestrutura:** Docker & Docker Compose.
 
 ## 🌟 Diferenciais
-1. **Auditoria Completa:** Cada exclusão gera um log que permite a restauração total do recurso, incluindo seu UUID original.
-2. **Segurança Proativa:** Verificação de bloqueio em tempo real, invalidando tokens de usuários punidos instantaneamente.
-3. **i18n Nativo:** Backend preparado para responder em múltiplos idiomas.
-4. **Build Otimizado:** Frontend configurado para máxima performance de carregamento.
+1. **Design Deep Dark & Mobile-First:** Interface moderna com fundo "Pure Black" (#000000) e acentos "Sky Blue" (#38BDF8), otimizada para dispositivos móveis com menus adaptativos.
+2. **Favoritos e Notificações:** Sistema de engajamento que permite favoritar tópicos e receber alertas em tempo real sobre novas respostas e mudanças de status.
+3. **Auditoria Completa:** Cada exclusão gera um log que permite a restauração total do recurso, incluindo seu UUID original.
+4. **Segurança Proativa:** Verificação de bloqueio em tempo real, invalidando tokens de usuários punidos instantaneamente.
+5. **i18n Nativo:** Backend preparado para responder em múltiplos idiomas.
+6. **Build Otimizado:** Frontend configurado para máxima performance de carregamento.

@@ -10,15 +10,19 @@ import * as directives from 'vuetify/directives'
 const vuetify = createVuetify({ components, directives })
 
 describe('TopicListView - Status Rendering', () => {
+  const globalOptions = {
+    plugins: [createTestingPinia({ stubActions: false }), vuetify],
+    stubs: {
+      'v-pagination': true,
+      'v-dialog': true,
+      'BaseChip': { template: '<span class="status-chip"><slot /></span>' },
+      'FavoriteButton': true
+    }
+  }
+
   it('should display correct text for CLOSED status', async () => {
     const wrapper = mount(TopicListView, {
-      global: {
-        plugins: [createTestingPinia({ stubActions: false }), vuetify],
-        stubs: {
-          'v-pagination': true,
-          'v-dialog': true
-        }
-      }
+      global: globalOptions
     })
 
     const store = useTopicStore()
@@ -29,8 +33,7 @@ describe('TopicListView - Status Rendering', () => {
 
     await wrapper.vm.$nextTick()
     
-    const chip = wrapper.find('.status-chip')
-    expect(chip.text()).toContain('FECHADO')
+    expect(wrapper.text()).toContain('CLOSED')
   })
 
   it('should display correct text for OPEN status', async () => {
@@ -52,7 +55,6 @@ describe('TopicListView - Status Rendering', () => {
 
     await wrapper.vm.$nextTick()
     
-    const chip = wrapper.find('.status-chip')
-    expect(chip.text()).toContain('ABERTO')
+    expect(wrapper.text()).toContain('OPEN')
   })
 })

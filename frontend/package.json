@@ -28,6 +28,7 @@
     "@vue/test-utils": "^2.4.6",
     "@tsconfig/node20": "^20.1.4",
     "jsdom": "^27.4.0",
-    "@pinia/testing": "^0.1.7"
+    "@pinia/testing": "^0.1.7",
+    "cypress": "^13.17.0"
   }
 }

@@ -53,7 +53,8 @@ class AuditIntegrationTest {
                 .filter(l -> "DELETE".equals(l.getActionType()))
                 .findFirst().orElseThrow();
 
-        auditLogService.restore(logEntry.getId());
+        // Updated to use the new signature (logId, includeAnswers)
+        auditLogService.restore(logEntry.getId(), false);
 
         var restored = topicRepository.findById(originalId);
         assertThat(restored).isPresent();

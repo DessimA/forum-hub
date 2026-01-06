@@ -12,6 +12,8 @@
 ### Frontend (Vue.js)
 - **Unit Tests:** Component and store tests (Vitest).
 - **E2E (End-to-End):** Critical user flows (Cypress).
+  - *Hardening:* Tests have been optimized to handle Vuetify 3 animations using forced interactions (`{force: true}`) and explicit data loading waits (timeouts up to 30s).
+  - *Dynamic Data:* Usage of `Date.now()` to ensure unique titles in topic creation, preventing duplication errors between runs.
 
 ---
 
@@ -23,6 +25,11 @@ The project has an isolated testing environment that automatically starts the ne
 ```bash
 ./automation/test.sh
 ```
+
+### Stability Adjustments (CI/CD)
+To ensure high-frequency tests are not blocked, the backend in the `dev/test` profile has an expanded request limit:
+- **Rate Limit:** 1000 requests per minute (configured in `application-dev.yml`).
+- **Persistence:** Docker volumes ensure that the database state is preserved or cleaned as needed by the automation script.
 
 ### What the script does:
 1. Starts a dedicated **Redis** container for testing.

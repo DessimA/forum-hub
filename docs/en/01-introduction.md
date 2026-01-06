@@ -13,7 +13,9 @@ To provide a stable and secure platform where users can create topics, answer qu
 - **Infrastructure:** Docker & Docker Compose.
 
 ## 🌟 Highlights
-1. **Full Auditing:** Every deletion generates a log that allows for full resource restoration, including its original UUID.
-2. **Proactive Security:** Real-time block checking, instantly invalidating tokens of punished users.
-3. **Native i18n:** Backend ready to respond in multiple languages.
-4. **Optimized Build:** Frontend configured for maximum loading performance.
+1. **Deep Dark & Mobile-First Design:** Modern interface featuring a "Pure Black" (#000000) background and "Sky Blue" (#38BDF8) accents, optimized for mobile devices with adaptive menus.
+2. **Favorites and Notifications:** Engagement system that allows users to favorite topics and receive real-time alerts about new replies and status changes.
+3. **Full Auditing:** Every deletion generates a log that allows for full resource restoration, including its original UUID.
+4. **Proactive Security:** Real-time block checking, instantly invalidating tokens of punished users.
+5. **Native i18n:** Backend ready to respond in multiple languages.
+6. **Optimized Build:** Frontend configured for maximum loading performance.

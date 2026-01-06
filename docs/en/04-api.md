@@ -74,6 +74,13 @@ Discussion management.
 ### Users (`/api/v1/users`)
 - **GET** `/profile`: Logged-in user data.
 - **POST** `/{id}/block`: Administrative/Moderative block (`BlockRequestDTO`).
+- **POST** `/{id}/unblock`: Remove active punishment.
+- **PATCH** `/{id}/role`: Change access profile (Requires ADMIN permission).
+
+### Audit and Recovery (`/api/v1/admin/logs`)
+- **GET** `/`: Complete history of administrative actions.
+- **POST** `/{id}/restore`: Restores a deleted entity (Topic or Answer) to its original state.
+- **DELETE** `/{id}`: Permanently deletes the audit log (Definitive destruction).
 
 ### Favorites (`/api/v1/favorites`)
 - **POST** `/topics/{topicId}`: Add topic to user favorites.

@@ -19,7 +19,21 @@ erDiagram
     TOPICS ||--o{ NOTIFICATIONS : triggers
 
     PROFILES {
-//... (keep existing)
+        binary(16) id PK
+        varchar(50) name UK "ROLE_ADMIN, ROLE_USER..."
+    }
+
+    USERS {
+        binary(16) id PK
+        varchar(100) name
+        varchar(255) email UK
+        varchar(255) password
+        binary(16) profile_id FK
+        boolean is_permanent_blocked
+        timestamp blocked_until
+        text suspension_justification
+        timestamp created_at
+        timestamp updated_at
     }
 
     USER_FAVORITES {
@@ -38,8 +52,43 @@ erDiagram
         timestamp created_at
     }
 
+    COURSES {
+        binary(16) id PK
+        varchar(100) name
+        varchar(50) category
+        timestamp created_at
+    }
+
+    TOPICS {
+        binary(16) id PK
+        varchar(255) title
+        text message
+        varchar(20) status "OPEN, CLOSED, SOLVED"
+        binary(16) author_id FK
+        binary(16) course_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    ANSWERS {
+        binary(16) id PK
+        text message
+        boolean solution
+        binary(16) topic_id FK
+        binary(16) author_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
     AUDIT_LOGS {
-//...
+        binary(16) id PK
+        varchar(50) action_type "DELETE, UPDATE..."
+        varchar(50) entity_type "TOPIC, USER..."
+        varchar(36) entity_id
+        text content "Backup of deleted data"
+        text justification
+        varchar(255) performed_by
+        timestamp created_at
     }
 ```
 

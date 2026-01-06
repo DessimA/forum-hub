@@ -1,21 +1,17 @@
 describe('Topic Management', () => {
   beforeEach(() => {
-    cy.visit('/login')
-    cy.get('input[type="text"]').type('admin@forumhub.com')
-    cy.get('input[type="password"]').type('123456')
-    cy.get('button[type="submit"]').click()
+    cy.login('admin@forumhub.com', 'admin123')
+    cy.visit('/topics')
   })
 
   it('should view topic list', () => {
-    cy.visit('/')
-    cy.contains('Explorar Tópicos')
-    // Check if list is populated (assuming backend has data)
-    // cy.get('.topico-card').should('have.length.gt', 0)
+    cy.contains('h1', 'Explorar Tópicos').should('be.visible')
+    cy.get('[data-cy="topic-card"]').should('have.length.at.least', 1)
   })
 
   it('should open new topic dialog', () => {
-    cy.contains('Novo Tópico').click()
-    cy.contains('Novo Tópico').should('be.visible')
-    cy.contains('Postar Tópico').should('be.disabled') // Form invalid initially
+    cy.get('[data-cy="nav-new-topic"]').should('be.visible').click({ force: true })
+    cy.get('.v-dialog').should('be.visible')
+    cy.contains('.v-toolbar-title', 'Novo Tópico').should('be.visible')
   })
 })

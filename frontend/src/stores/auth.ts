@@ -49,6 +49,22 @@ export const useAuthStore = defineStore('auth', {
       }
     },
 
+    async register(name: string, email: string, password: string) {
+      this.loading = true
+      try {
+        await api.post('/auth/register', { name, email, password })
+        // After registration, usually we login or redirect to login. 
+        // The previous implementation suggested it returns to Home after login in the view.
+        // Let's implement login here to match the view's expectation of being logged in.
+        return await this.login({ email, password })
+      } catch (error) {
+        console.error('Registration failed', error)
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
     logout() {
       this.token = ''
       localStorage.removeItem('token')

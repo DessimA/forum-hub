@@ -7,99 +7,71 @@
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.5-4FC08D.svg)]()
 [![Docker](https://img.shields.io/badge/Docker-Compose-blue.svg)]()
 
-## 📋 Descrição / Description
-
-**PT-BR:** O FórumHub é uma plataforma moderna para troca de conhecimento focada em **segurança proativa** e **integridade de dados**. Utiliza arquitetura de Monólito Modular com IDs baseados em UUIDs determinísticos. A aplicação conta com um sistema de moderação avançado, autenticação JWT robusta e suporte completo a internacionalização (i18n).
-
-**EN:** ForumHub is a modern knowledge-sharing platform focused on **proactive security** and **data integrity**. It uses a Modular Monolith architecture with deterministic UUID-based IDs. The application features an advanced moderation system, robust JWT authentication, and full internationalization (i18n) support.
+O **FórumHub** é uma plataforma Full Stack de última geração para troca de conhecimento, desenvolvida com foco em **Segurança Proativa**, **Arquitetura Limpa** e uma experiência de usuário imersiva.
 
 ---
 
-## ✨ Recursos de Destaque / Key Features
+## 📽️ Demonstração em Vídeo
 
-- **🛡️ Segurança Avançada:**
-  - Gestão de segredos via variáveis de ambiente (`.env`).
-  - Swagger protegido (Bearer Auth) e desabilitado em produção.
-  - Bloqueio proativo de usuários com limpeza automática de conteúdo.
-- **🌍 Internacionalização (i18n):**
-  - Backend responde mensagens de erro em Inglês ou Português baseado no header `Accept-Language`.
-- **🏗️ Arquitetura Robusta:**
-  - Monólito Modular bem definido.
-  - UUIDs (Binary 16) para alta performance de banco.
-  - Paginação estável serializada via DTO.
-- **⭐ Favoritos e Notificações:**
-  - Gerenciamento de tópicos favoritos com persistência.
-  - Sistema de notificações em tempo real (polling) para novos eventos (respostas, fechamento, exclusão).
-- **⚡ Frontend Otimizado:**
-  - Build com *Manual Chunking* para carregamento rápido.
-  - Interface moderna com Material Design e tema Neon.
+Abaixo você pode conferir a plataforma em ação. Os vídeos detalham desde a interface do usuário até a robustez da documentação da API.
+
+### 1. Projeto em Execução (Deep Dark UI)
+Este vídeo demonstra o fluxo completo do usuário, o sistema de favoritos, notificações em tempo real e a responsividade mobile-first.
+
+https://github.com/DessimA/forum-hub/assets/docs/videos/demo-execucao.mp4
+
+### 2. Documentação e Testes (Swagger UI)
+Uma visão rápida sobre a documentação interativa OpenAPI/Swagger, detalhando os esquemas de segurança e os contratos dos DTOs.
+
+https://github.com/DessimA/forum-hub/assets/docs/videos/demo-swagger.mp4
+
+> *Nota: Caso os vídeos acima não carreguem, eles estão localizados em `/docs/videos/demo-execucao.mp4` e `/docs/videos/demo-swagger.mp4`.*
 
 ---
 
-## 🛠️ Tecnologias / Tech Stack
+## 📋 Sobre o Projeto
 
-- **Backend:** Java 17, Spring Boot 3.4.1, Flyway, Spring Security (JWT), MapStruct, SpringDoc OpenAPI.
-- **Frontend:** Vue.js 3.5+, TypeScript, Pinia 2.3, Vuetify 3.11, Vite 6.
-- **Tests:** JUnit 5, Mockito, Vitest 4, Vue Test Utils.
-- **Infra:** Docker, Nginx, MySQL 8.4.
+O FórumHub utiliza uma arquitetura de **Monólito Modular**, garantindo que cada domínio (Tópicos, Usuários, Cursos, Notificações) seja independente e fácil de manter.
 
----
-
-## 🚀 Quick Start
-
-### Pré-requisitos
-- Docker & Docker Compose instalados.
-
-### Passo a Passo
-
-1. **Clone o repositório:**
-   ```bash
-   git clone https://github.com/seu-usuario/forum-hub.git
-   cd forum-hub
-   ```
-
-2. **Configure o Ambiente (.env):**
-   É **obrigatório** criar o arquivo de variáveis de ambiente.
-   ```bash
-   cp .env.example .env
-   ```
-   *Edite o arquivo `.env` se desejar alterar senhas ou segredos.*
-
-3. **Execute o Projeto:**
-   Utilize o gerenciador CLI para facilitar o processo:
-   ```bash
-   ./automation/run.sh
-   ```
-   *Selecione a opção **3. Executar Ambos (Full Stack)** no menu.*
-
-4. **Acesse:**
-   - **Frontend:** `http://localhost:3000` (Dev) ou `http://localhost:80` (Prod)
-   - **Swagger UI:** `http://localhost:8080/swagger-ui.html`
+### ✨ Diferenciais de Destaque
+- **🎨 Design Deep Dark:** Interface otimizada para produtividade com fundo Pure Black (#000000) e acentos Sky Blue (#38BDF8).
+- **🛡️ Auditoria Avançada:** Sistema que registra snapshots de dados excluídos, permitindo que administradores restaurem recursos ao estado original.
+- **📱 Mobile-First:** Experiência fluida em qualquer dispositivo com menus adaptativos e componentes Vuetify 3 customizados.
+- **🚀 Performance:** Utilização de cache Redis L2 e UUIDs binários para garantir respostas rápidas mesmo com grande volume de dados.
 
 ---
 
-## 📚 Documentação Completa
+## 📚 Documentação Técnica
 
-A documentação técnica detalhada está disponível na pasta `/docs`:
+Para detalhes profundos sobre como o sistema foi construído, consulte nossos guias especializados:
 
-- [02 - Arquitetura de Software](./docs/pt-br/02-arquitetura.md) (Diagramas C4 e Decisões)
-- [03 - Infraestrutura e Docker](./docs/pt-br/03-infraestrutura.md) (Setup e Scripts)
-- [04 - API REST](./docs/pt-br/04-api.md) (Endpoints e Segurança)
-- [05 - Frontend](./docs/pt-br/05-frontend.md)
-- [06 - Testes](./docs/pt-br/06-testes.md)
-
----
-
-## 🤝 Contribuindo
-
-1.  Faça um Fork do projeto.
-2.  Crie uma Branch para sua Feature (`git checkout -b feature/AmazingFeature`).
-3.  Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`).
-4.  Push para a Branch (`git push origin feature/AmazingFeature`).
-5.  Abra um Pull Request.
+- [📖 Introdução Geral](./docs/pt-br/01-introducao.md)
+- [🏗️ Arquitetura e Decisões (ADRs)](./docs/pt-br/02-arquitetura.md)
+- [📡 API REST e Contratos](./docs/pt-br/04-api.md)
+- [🖥️ Frontend e Design System](./docs/pt-br/05-frontend.md)
+- [🧪 Estratégia de Testes (Unit & E2E)](./docs/pt-br/06-testes.md)
+- [🗄️ Modelagem de Banco de Dados](./docs/pt-br/07-banco-dados.md)
 
 ---
 
-## 📄 Licença
+## 🚀 Como Executar
 
-Distribuído sob a licença MIT. Veja `LICENSE` para mais informações.
+### Passo a Passo Rápido
+1.  **Clone o repositório:** `git clone https://github.com/DessimA/forum-hub.git`
+2.  **Configuração:** Copie o `.env.example` para `.env` e ajuste suas chaves.
+3.  **Docker:** Execute `./automation/run.sh` e escolha a opção **3**.
+4.  **Acesse:** Frontend em `http://localhost:3000` | API em `http://localhost:8080/swagger-ui.html`.
+
+---
+
+## 👨‍💻 Autor
+
+Este projeto foi desenvolvido com dedicação por **José Anderson da Silva Costa**.
+
+- 🌐 **Portfolio/Links:** [meus-links-olive.vercel.app](https://meus-links-olive.vercel.app/)
+- 🐙 **GitHub:** [DessimA](https://github.com/DessimA)
+- 💼 **LinkedIn:** [in/dessim](https://www.linkedin.com/in/dessim)
+
+---
+
+*"O conhecimento só é valioso quando é compartilhado e protegido."*

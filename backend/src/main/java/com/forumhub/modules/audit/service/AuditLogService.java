@@ -53,7 +53,8 @@ public class AuditLogService {
     }
 
     @Transactional
-    public void restore(UUID logId) {
+    @org.springframework.cache.annotation.CacheEvict(value = "topics", allEntries = true)
+    public void restore(UUID logId, boolean includeAnswers) {
         AuditLog logEntry = auditLogRepository.findById(logId)
                 .orElseThrow(() -> new ResourceNotFoundException("Log not found"));
 
@@ -63,25 +64,46 @@ public class AuditLogService {
 
         if ("TOPIC".equals(logEntry.getEntityType())) {
             restoreTopic(logEntry);
+            
+            if (includeAnswers) {
+                // Find all answer logs related to this topic ID
+                String topicIdMarker = "TopicId: " + logEntry.getEntityId();
+                List<AuditLog> answerLogs = auditLogRepository.findAllByActionTypeAndEntityTypeAndContentContaining(
+                        "DELETE", "ANSWER", topicIdMarker);
+                
+                for (AuditLog answerLog : answerLogs) {
+                    try {
+                        restoreAnswer(answerLog);
+                        auditLogRepository.delete(answerLog);
+                    } catch (Exception e) {
+                        log.warn("Failed to restore cascaded answer {}: {}", answerLog.getEntityId(), e.getMessage());
+                    }
+                }
+            }
         } else if ("ANSWER".equals(logEntry.getEntityType())) {
             restoreAnswer(logEntry);
         }
 
         auditLogRepository.delete(logEntry);
-        log.info("Entity {} ID {} restored successfully with original UUID", logEntry.getEntityType(), logEntry.getEntityId());
+        log.info("Entity {} ID {} restored successfully (IncludeAnswers: {})", 
+                logEntry.getEntityType(), logEntry.getEntityId(), includeAnswers);
     }
 
     private void restoreTopic(AuditLog logEntry) {
         String content = logEntry.getContent();
         try {
-            String title = extractValue(content, "Title: ", " | Message:");
-            String message = extractValue(content, "Message: ", " | Author:");
-            String authorEmail = extractValue(content, "Author: ", " | CourseId:");
-            UUID courseId = UUID.fromString(content.substring(content.lastIndexOf("CourseId: ") + 10));
+            // Robust parsing: find the markers and extract content between them
+            // Title: [Value] | Message: [Value] | Author: [Value] | CourseId: [Value]
+            String title = extractRobust(content, "Title: ", " | Message: ");
+            String message = extractRobust(content, " | Message: ", " | Author: ");
+            String authorEmail = extractRobust(content, " | Author: ", " | CourseId: ");
+            String courseIdStr = content.substring(content.lastIndexOf("CourseId: ") + 10).trim();
+            UUID courseId = UUID.fromString(courseIdStr);
 
             var author = userRepository.findByEmail(authorEmail)
                     .orElseThrow(() -> new BusinessValidationException("Author not found: " + authorEmail));
-            var course = courseRepository.findById(courseId).orElseThrow();
+            var course = courseRepository.findById(courseId)
+                    .orElseThrow(() -> new BusinessValidationException("Original course (ID: " + courseId + ") no longer exists."));
 
             Topic topic = Topic.builder()
                     .id(UUID.fromString(logEntry.getEntityId()))
@@ -95,16 +117,19 @@ public class AuditLogService {
         } catch (BusinessValidationException be) {
             throw be;
         } catch (Exception e) {
-            throw new BusinessValidationException("Failed to restore topic: content corrupted or dependencies missing");
+            log.error("Restoration failed for log {}: {}", logEntry.getId(), e.getMessage());
+            throw new BusinessValidationException("Failed to restore topic: data corrupted or dependencies missing.");
         }
     }
 
     private void restoreAnswer(AuditLog logEntry) {
         String content = logEntry.getContent();
         try {
-            String message = extractValue(content, "Message: ", " | Author:");
-            String authorEmail = extractValue(content, "Author: ", " | TopicId:");
-            UUID topicId = UUID.fromString(content.substring(content.lastIndexOf("TopicId: ") + 9));
+            // Message: [Value] | Author: [Value] | TopicId: [Value]
+            String message = extractRobust(content, "Message: ", " | Author: ");
+            String authorEmail = extractRobust(content, " | Author: ", " | TopicId: ");
+            String topicIdStr = content.substring(content.lastIndexOf("TopicId: ") + 9).trim();
+            UUID topicId = UUID.fromString(topicIdStr);
 
             var author = userRepository.findByEmail(authorEmail)
                     .orElseThrow(() -> new BusinessValidationException("Author not found: " + authorEmail));
@@ -121,14 +146,24 @@ public class AuditLogService {
         } catch (BusinessValidationException be) {
             throw be;
         } catch (Exception e) {
-            throw new BusinessValidationException("Failed to restore answer: content corrupted");
+            log.error("Restoration failed for log {}: {}", logEntry.getId(), e.getMessage());
+            throw new BusinessValidationException("Failed to restore answer: data corrupted.");
         }
     }
 
+    private String extractRobust(String text, String startMarker, String endMarker) {
+        int start = text.indexOf(startMarker);
+        if (start == -1) return "";
+        start += startMarker.length();
+        
+        int end = text.indexOf(endMarker, start);
+        if (end == -1) return text.substring(start);
+        
+        return text.substring(start, end);
+    }
+
     private String extractValue(String text, String start, String end) {
-        int startIndex = text.indexOf(start) + start.length();
-        int endIndex = text.indexOf(end);
-        return text.substring(startIndex, endIndex);
+        return extractRobust(text, start, end);
     }
 
     @Transactional

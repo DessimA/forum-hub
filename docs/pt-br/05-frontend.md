@@ -3,12 +3,25 @@
 O frontend do FórumHub prioriza a clareza e a eficiência, utilizando as tecnologias mais recentes do ecossistema Vue.
 
 ## 🎨 User Experience (UX)
-A interface é construída inteiramente sobre o **Vuetify 3**, garantindo que todas as interações críticas ocorram através de componentes integrados.
+A interface utiliza o tema **Deep Dark**, otimizando a experiência em ambientes de baixa luminosidade e seguindo padrões mobile-first.
 
-### Padrões de Interface:
-- **Navegação Dinâmica:** Sincronização de filtros e ordenação diretamente com a URL.
-- **Fluxos Modais:** Ações de edição e exclusão utilizam `v-dialog`.
-- **Feedback Não Intrusivo:** Notificações via `v-snackbar`.
+### Design System
+| Elemento | Especificação |
+| :--- | :--- |
+| **Paleta Principal** | Pure Black (#000000) e Sky Blue (#38BDF8) |
+| **Tipografia** | Inter (ou padrão Sans-Serif moderna) |
+| **Bordas** | `border-radius: 4px` em todos os botões e inputs |
+| **Transições** | 150ms ease-in-out para interações de hover |
+
+### Comportamento Responsivo
+- **Mobile (< 960px):**
+  - Tópicos exibidos em coluna única (full-width).
+  - Botão "Novo Tópico" flutuante ou simplificado na navbar.
+  - Sidebar oculta por menu hambúrguer.
+- **Desktop (> 1280px):**
+  - Grid de tópicos em 3 colunas.
+  - Links de navegação diretos na App Bar.
+  - Max-width de 1400px para evitar dispersão visual.
 
 ---
 
@@ -16,14 +29,15 @@ A interface é construída inteiramente sobre o **Vuetify 3**, garantindo que to
 O estado é descentralizado em stores:
 - **TopicStore:** Preserva filtros de `status`, `courseId` e `title` durante a paginação.
 - **AuthStore:** Gerencia o token JWT e decodifica roles para controle de acesso visual.
-- **FavoriteStore:** Mantém um conjunto de IDs de tópicos favoritos para o usuário atual.
-- **NotificationStore:** Gerencia polling em tempo real (a cada 30s) para contagem de não lidas e sincroniza o estado da UI em eventos do sistema (como deleção de tópicos).
+- **FavoriteStore:** Mantém um `Set` local de IDs favoritados para garantir que o ícone de estrela esteja sincronizado instantaneamente entre a lista geral e a página de detalhes.
+- **NotificationStore:** Realiza polling a cada 30 segundos para atualizar o contador de alertas. Ao clicar em uma notificação, marca-a como lida e navega para o tópico alvo.
 
 ---
 
 ## 🧩 Componentes Compartilhados
-- **FavoriteButton:** Botão de estrela para favoritar tópicos com estado persistente.
-- **NotificationBell:** Sino interativo na navbar com badge de contagem e lista de histórico de notificações.
+- **FavoriteButton:** Botão reativo que alterna o estado de favorito com feedback visual imediato.
+- **NotificationBell:** Centralizador de alertas na Navbar com suporte a "Marcar todas como lidas".
+- **AnimatedLogo:** Logotipo SVG otimizado com animações sutis de entrada.
 
 ---
 

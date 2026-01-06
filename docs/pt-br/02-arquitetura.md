@@ -130,33 +130,64 @@ graph TD
 
 ---
 
+## 🎨 Design System e UI/UX
+
+A aplicação adota uma estética **Deep Dark**, focada em legibilidade e redução de fadiga ocular, utilizando um Design System rigoroso.
+
+### Identidade Visual
+- **Fundo (Background):** Pure Black (#000000).
+- **Acentos (Accents):** Sky Blue (#38BDF8).
+- **Superfícies (Surface):** Dark Grey (#111111).
+- **Arredondamento (Border Radius):** Padrão de 4px para botões e cards.
+
+### Estratégia Responsiva (Mobile-First)
+- **Navegação Adaptativa:** Desktop utiliza barra fixa com links; Mobile utiliza menu hambúrguer com `v-navigation-drawer`.
+- **Layout de Cards:** Grid dinâmico que alterna de 3 colunas (Desktop) para 1 coluna (Mobile), garantindo área de toque adequada (mínimo 36px de altura para campos).
+
+---
+
 ## 🔌 Fluxos de Dados Críticos
 
-### 1. Criação de Tópico Seguro
-Este fluxo demonstra a validação de segurança e a persistência.
+### 1. Sistema de Notificações
+O sistema utiliza uma estratégia de **Smart Polling** no frontend para manter o usuário atualizado sem sobrecarregar o servidor.
 
 ```mermaid
 sequenceDiagram
-    participant Client as Frontend/Swagger
-    participant Filter as SecurityFilter
-    participant API as TopicController
-    participant Service as TopicService
+    participant User as Frontend (Pinia)
+    participant API as NotificationController
     participant DB as MySQL
 
-    Client->>Filter: POST /topics (Header: Bearer Token)
-    Filter->>Filter: Valida Assinatura JWT
-    Filter->>Filter: Checa status do Usuário (Ativo?)
-    
-    alt Token Inválido ou Usuário Bloqueado
-        Filter-->>Client: 403 Forbidden
-    else Token Válido
-        Filter->>API: Forward Request (User Context)
-        API->>Service: create(TopicRequestDTO)
-        Service->>DB: Repository.save(Topic)
-        DB-->>Service: Topic Saved (UUID)
-        Service-->>API: TopicResponseDTO
-        API-->>Client: 201 Created (JSON)
+    rect rgb(20, 20, 20)
+    Note right of User: Polling a cada 30s
+    User->>API: GET /unread-count
+    API->>DB: countByUserIdAndIsReadFalse()
+    DB-->>API: Total: 5
+    API-->>User: { count: 5 }
+    User->>User: Atualiza Badge na Navbar
     end
+```
+
+### 2. Auditoria e Restauração
+Fluxo de proteção contra deleção acidental ou maliciosa.
+
+```mermaid
+sequenceDiagram
+    participant Admin
+    participant Service as TopicService
+    participant Audit as AuditLogService
+    participant DB as MySQL
+
+    Admin->>Service: DELETE /topics/{id}
+    Service->>Audit: logDeletion(TopicData)
+    Audit->>DB: INSERT INTO audit_logs (snapshot_json)
+    Service->>DB: Physical DELETE (ou Logical)
+    
+    Note over Admin, DB: Posteriormente...
+    
+    Admin->>Audit: POST /admin/logs/{id}/restore
+    Audit->>DB: SELECT snapshot_json
+    Audit->>Service: reconstruct(TopicData)
+    Service->>DB: INSERT (com UUID original)
 ```
 
 ---

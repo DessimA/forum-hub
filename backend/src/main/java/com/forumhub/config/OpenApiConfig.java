@@ -19,8 +19,10 @@ public class OpenApiConfig {
             **FórumHub** is a state-of-the-art knowledge exchange platform designed with a focus on **Proactive Security**, **Clean Architecture**, and **Developer Experience**.
             
             ### 🚀 Key Features
-            *   **Modular Monolith Architecture:** Domain-driven design with clear boundaries between Auth, Topics, and Courses.
-            *   **Advanced Security:** JWT authentication with real-time block enforcement and proactive moderation capabilities.
+            *   **Modular Monolith Architecture:** Domain-driven design with clear boundaries between Auth, Topics, Courses, and User Management.
+            *   **Engagement System:** Built-in **Favorite Topics** and **Real-time Notifications** for updates on discussions.
+            *   **Administrative Oversight:** Advanced **Audit Logs** with entity restoration capabilities and multi-level moderation.
+            *   **Advanced Security:** JWT authentication with real-time block enforcement and proactive security filters.
             *   **Deterministic UUIDs:** High-performance binary IDs (MySQL 8 optimized) to prevent enumeration attacks.
             *   **Native Internationalization:** Full support for English and Portuguese (PT-BR) error messages.
             
@@ -28,9 +30,9 @@ public class OpenApiConfig {
             This API is protected. Use the **Authorize** button with your Bearer Token to test endpoints.
             
             ---
-            Developed with ❤️ by **José Anderson**.
+            Developed with ❤️ by **José Anderson da Silva Costa**.
             
-            [Website / My Links](https://meus-links-olive.vercel.app/) | [GitHub](https://github.com/DessimA) | [LinkedIn](https://www.linkedin.com/in/dessim)
+            [**Website / My Links**](https://meus-links-olive.vercel.app/) | [**GitHub (DessimA)**](https://github.com/DessimA) | [**LinkedIn (in/dessim)**](https://www.linkedin.com/in/dessim)
             
             *"Knowledge grows when shared."*
             """;
@@ -40,9 +42,9 @@ public class OpenApiConfig {
                         .title("FórumHub API - Knowledge Exchange Platform")
                         .description(description)
                         .contact(new Contact()
-                                .name("José Anderson")
+                                .name("José Anderson da Silva Costa")
                                 .url("https://meus-links-olive.vercel.app/"))
-                        .version("v1.0.0")
+                        .version("v1.2.0")
                         .license(new License()
                                 .name("Apache 2.0")
                                 .url("https://www.apache.org/licenses/LICENSE-2.0.html")))

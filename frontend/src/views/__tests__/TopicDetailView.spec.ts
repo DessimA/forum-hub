@@ -10,7 +10,7 @@ const VContainer = { template: '<div><slot /></div>' }
 const VCard = { template: '<div><slot /></div>' }
 const VBtn = { 
   props: ['icon'],
-  template: '<button :data-icon="icon"><slot /></button>' 
+  template: '<button v-bind="$attrs" :data-icon="icon"><slot /></button>' 
 }
 const VIcon = { template: '<i />' }
 const VChip = { template: '<span><slot /></span>' }
@@ -18,8 +18,20 @@ const VDivider = { template: '<hr />' }
 const VTextarea = { props: ['modelValue'], template: '<textarea :value="modelValue" />' }
 const VTextField = { props: ['modelValue'], template: '<input :value="modelValue" />' }
 const VDialog = { props: ['modelValue'], template: '<div><slot v-if="modelValue" /></div>' }
+const VSelect = { template: '<select></select>' }
+const VRow = { template: '<div><slot /></div>' }
+const VCol = { template: '<div><slot /></div>' }
+const VSpacer = { template: '<div></div>' }
+const BaseChip = { template: '<span><slot /></span>' }
+const FavoriteButton = { template: '<div></div>' }
 
-const globalComponents = { VContainer, VCard, VBtn, VIcon, VChip, VDivider, VTextarea, VTextField, VDialog }
+const globalComponents = { 
+  VContainer, VCard, VBtn, VIcon, VChip, VDivider, VTextarea, VTextField, VDialog, VSelect,
+  VRow, VCol, VSpacer, BaseChip, FavoriteButton
+}
+
+import { createVuetify } from 'vuetify'
+const vuetify = createVuetify()
 
 vi.mock('@/services/api', () => ({
   default: {
@@ -57,18 +69,28 @@ describe('TopicDetailView - Moderator Rules', () => {
   })
 
   it('shows punishment button for MODERATOR on other users answers', async () => {
-    const pinia = createTestingPinia({ stubActions: false })
+    const pinia = createTestingPinia({ 
+      stubActions: false,
+      initialState: {
+        auth: {
+          token: 'fake-token' // Ensure isAuthenticated is true
+        }
+      }
+    })
     const authStore = useAuthStore()
     
-    // Use any to bypass TypeScript read-only check on getters in tests
-    const authStoreAny = authStore as any
-    authStoreAny.isModerator = true
-    authStoreAny.isAdmin = false
-    authStoreAny.userEmail = 'mod@test.com'
+    // In @pinia/testing, getters can be mocked by simply assigning values to them
+    // as long as the store is defined with getters.
+    // @ts-ignore
+    authStore.isModerator = true
+    // @ts-ignore
+    authStore.isAdmin = false
+    // @ts-ignore
+    authStore.userEmail = 'mod@test.com'
 
     const wrapper = mount(TopicDetailView, {
       global: {
-        plugins: [pinia],
+        plugins: [pinia, vuetify],
         components: globalComponents
       }
     })
@@ -90,7 +112,7 @@ describe('TopicDetailView - Moderator Rules', () => {
 
     const wrapper = mount(TopicDetailView, {
       global: {
-        plugins: [pinia],
+        plugins: [pinia, vuetify],
         components: globalComponents
       }
     })

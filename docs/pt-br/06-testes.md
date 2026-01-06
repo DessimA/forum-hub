@@ -12,6 +12,8 @@ O **FórumHub** utiliza uma pirâmide de testes abrangente, garantindo a estabil
 ### Frontend (Vue.js)
 - **Unitários:** Testes de componentes e stores (Vitest).
 - **E2E (End-to-End):** Fluxos críticos de usuário (Cypress).
+  - *Hardening:* Os testes foram otimizados para lidar com animações do Vuetify 3 usando interações forçadas (`{force: true}`) e esperas explícitas por carregamento de dados (timeouts de até 30s).
+  - *Dados Dinâmicos:* Uso de `Date.now()` para garantir títulos únicos em criações de tópicos, evitando erros de duplicidade entre execuções.
 
 ---
 
@@ -23,6 +25,11 @@ O projeto possui um ambiente de testes isolado que sobe automaticamente os servi
 ```bash
 ./automation/test.sh
 ```
+
+### Ajustes de Estabilidade (CI/CD)
+Para garantir que os testes de alta frequência não sejam bloqueados, o backend no perfil `dev/test` possui um limite de requisições ampliado:
+- **Rate Limit:** 1000 requisições por minuto (configurado em `application-dev.yml`).
+- **Persistence:** Volumes Docker garantem que o estado do banco seja preservado ou limpo conforme a necessidade do script de automação.
 
 ### O que o script faz:
 1. Sobe um container de **Redis** dedicado para os testes.

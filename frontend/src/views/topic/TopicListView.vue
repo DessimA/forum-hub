@@ -1,21 +1,27 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useTopicStore } from '@/stores/topic'
 import { useFavoriteStore } from '@/stores/favoriteStore'
 import api from '@/services/api'
 import FavoriteButton from '@/components/common/FavoriteButton.vue'
+import BaseChip from '@/components/base/BaseChip.vue'
+import { useDisplay } from 'vuetify'
 
+const { mobile } = useDisplay()
+const router = useRouter()
 const topicStore = useTopicStore()
 const favoriteStore = useFavoriteStore()
 
 const valid = ref(false)
 const saving = ref(false)
 const courses = ref<any[]>([])
-const form = ref({
-  title: '',
-  message: '',
-  courseId: null as number | null
-})
+const form = ref({ title: '', message: '', courseId: null as number | null })
+const snackbar = ref({ show: false, text: '', color: '' })
+
+const showMessage = (text: string, color: string = 'success') => {
+  snackbar.value = { show: true, text, color }
+}
 
 const fetchCourses = async () => {
   try {
@@ -23,7 +29,6 @@ const fetchCourses = async () => {
     courses.value = response?.data?.content || response?.data || []
   } catch (error) {
     console.error('Error fetching courses', error)
-    courses.value = []
   }
 }
 
@@ -34,52 +39,26 @@ const handleSave = async () => {
     await api.post('/topics', form.value)
     topicStore.closeDialog()
     form.value = { title: '', message: '', courseId: null }
+    showMessage('Tópico criado com sucesso!')
     topicStore.fetchTopics()
   } catch (error) {
-    alert('Erro ao criar tópico. Verifique se o título e mensagem já não existem.')
+    showMessage('Erro ao criar tópico. Verifique os campos.', 'error')
   } finally {
     saving.value = false
   }
 }
 
-const statusOptions = [
-  { title: 'Todos', value: null },
-  { title: 'Aberto', value: 'OPEN' },
-  { title: 'Fechado', value: 'CLOSED' },
-  { title: 'Resolvido', value: 'RESOLVED' }
-]
-
-const sortOptions = [
-  { title: 'Mais Recentes', value: 'createdAt,desc' },
-  { title: 'Mais Antigos', value: 'createdAt,asc' },
-  { title: 'Título (A-Z)', value: 'title,asc' },
-  { title: 'Título (Z-A)', value: 'title,desc' }
-]
-
 const getStatusColor = (status: string) => {
   switch (status) {
     case 'OPEN': return 'primary'
-    case 'CLOSED': return 'grey'
-    case 'RESOLVED': return 'success'
+    case 'CLOSED': return 'text-secondary'
+    case 'RESOLVED': return 'secondary'
     default: return 'primary'
   }
 }
 
-const getStatusText = (status: string) => {
-  switch (status) {
-    case 'OPEN': return 'ABERTO'
-    case 'CLOSED': return 'FECHADO'
-    case 'RESOLVED': return 'RESOLVIDO'
-    default: return status
-  }
-}
-
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleDateString('pt-BR', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  })
+  return new Date(dateString).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' })
 }
 
 onMounted(() => {
@@ -90,167 +69,182 @@ onMounted(() => {
 </script>
 
 <template>
-  <v-container class="py-10">
-    <v-row>
-      <v-col cols="12" class="d-flex align-center justify-space-between mb-2">
-        <h2 class="text-h4 font-weight-bold text-white">Explorar Tópicos</h2>
-        <v-chip color="primary" variant="outlined" label>
-          {{ topicStore.pagination.totalElements }} Tópicos Encontrados
-        </v-chip>
-      </v-col>
+  <v-container class="py-8 py-md-12 px-4 px-md-10" fluid style="max-width: 1560px; margin: 0 auto;">
+    <!-- Header -->
+    <header class="mb-10 mb-md-14 px-2">
+      <h1 class="text-responsive-h1 text-text-primary font-weight-bold mb-2">Explorar Tópicos</h1>
+      <p class="text-base text-text-secondary opacity-80">A plataforma oficial de aprendizado e suporte da comunidade</p>
+    </header>
 
-      <!-- Barra de Filtros -->
-      <v-col cols="12" class="mb-4">
-        <v-card color="surface" variant="flat" class="pa-4 border-subtle d-flex align-center flex-wrap gap-4">
+    <!-- Filters Section -->
+    <div class="mb-12 mb-md-16 px-2">
+      <v-row>
+        <v-col cols="12" md="6" lg="5">
           <v-text-field
             v-model="topicStore.filters.search"
-            prepend-inner-icon="mdi-magnify"
-            label="Buscar por título..."
-            density="compact"
+            placeholder="🔍 Buscar por título..."
+            @update:model-value="topicStore.fetchTopics(0)"
             variant="outlined"
             hide-details
-            clearable
-            class="search-field"
-            @update:model-value="topicStore.fetchTopics(0)"
+            bg-color="surface"
+            height="52"
+            class="rounded-lg"
           ></v-text-field>
-
+        </v-col>
+        <v-col cols="6" md="3" lg="2">
           <v-select
             v-model="topicStore.filters.status"
-            :items="statusOptions"
-            label="Status"
-            density="compact"
+            :items="['OPEN', 'CLOSED', 'RESOLVED']"
+            placeholder="Status"
+            clearable
             variant="outlined"
             hide-details
-            class="filter-select"
+            bg-color="surface"
             @update:model-value="topicStore.fetchTopics(0)"
           ></v-select>
-
+        </v-col>
+        <v-col cols="6" md="3" lg="2">
           <v-select
             v-model="topicStore.filters.courseId"
             :items="courses"
             item-title="name"
             item-value="id"
-            label="Curso"
-            density="compact"
+            placeholder="Curso"
+            clearable
             variant="outlined"
             hide-details
-            clearable
-            class="filter-select"
+            bg-color="surface"
             @update:model-value="topicStore.fetchTopics(0)"
           ></v-select>
-
+        </v-col>
+        <v-col cols="12" lg="3" class="d-flex gap-2">
           <v-select
             v-model="topicStore.filters.sort"
-            :items="sortOptions"
-            label="Ordenar por"
-            density="compact"
+            :items="[{title:'Recentes', value:'createdAt,desc'}, {title:'Antigos', value:'createdAt,asc'}]"
+            placeholder="Ordem"
             variant="outlined"
             hide-details
-            class="filter-select"
-            @update:model-value="topicStore.fetchTopics(0)"
+            bg-color="surface"
+            class="flex-grow-1"
           ></v-select>
-
-          <v-btn
-            prepend-icon="mdi-filter-off-outline"
-            variant="text"
-            color="grey"
+          <v-btn 
+            variant="outlined" 
+            color="secondary" 
+            icon="mdi-filter-off-outline" 
+            height="52"
+            width="52"
             @click="topicStore.resetFilters()"
-          >
-            Limpar
-          </v-btn>
-        </v-card>
-      </v-col>
+            class="border"
+          ></v-btn>
+        </v-col>
+      </v-row>
+    </div>
 
-      <v-col v-if="topicStore.loading" cols="12" class="text-center py-10">
-        <v-progress-circular indeterminate color="primary" size="64"></v-progress-circular>
-      </v-col>
-
-      <v-col v-else v-for="topic in topicStore.topics" :key="topic.id" cols="12">
-        <v-card 
-          class="topico-card mb-4 pa-4" 
-          color="surface" 
-          hover 
-          variant="flat"
-          :to="'/topics/' + topic.id"
-        >
-          <div class="d-flex justify-space-between align-start">
-            <div>
-              <h3 class="text-h5 font-weight-bold mb-2 text-white">{{ topic.title }}</h3>
-              <div class="d-flex align-center gap-4 text-body-2 text-grey-lighten-1">
-                <span class="d-flex align-center">
-                  <v-icon size="small" class="mr-1">mdi-account-circle-outline</v-icon>
-                  {{ topic.author }}
-                </span>
-                <span class="d-flex align-center ml-4">
-                  <v-icon size="small" class="mr-1">mdi-calendar-range</v-icon>
-                  {{ formatDate(topic.createdAt) }}
-                </span>
-                <v-chip size="x-small" color="secondary" variant="tonal" class="ml-4">
-                  {{ topic.course }}
-                </v-chip>
-              </div>
-            </div>
-                          <v-chip :color="getStatusColor(topic.status)" variant="tonal" size="small" class="font-weight-bold status-chip">
-                          {{ getStatusText(topic.status) }}
-                        </v-chip>
-                        <FavoriteButton :topicId="topic.id" class="ml-2" />
-                      </div>
-                      
-                      <v-card-text class="px-0 pb-0 pt-4 text-truncate text-grey-lighten-2">            {{ topic.message }}
-          </v-card-text>
-        </v-card>
-      </v-col>
-
-      <v-col cols="12" class="d-flex justify-center mt-6">
-        <v-pagination
-          v-if="topicStore.pagination.totalPages > 1"
-          v-model="topicStore.pagination.page"
-          :length="topicStore.pagination.totalPages"
-          @update:model-value="(p) => topicStore.fetchTopics(p - 1)"
-          color="primary"
-        ></v-pagination>
+    <!-- Topics Grid: 3 columns on LG+ -->
+    <v-row v-if="topicStore.loading" justify="center">
+      <v-col cols="12" class="text-center py-16">
+        <v-progress-circular indeterminate color="primary" size="64" width="6"></v-progress-circular>
       </v-col>
     </v-row>
 
-    <!-- Dialog de Novo Tópico -->
-    <v-dialog v-model="topicStore.showDialog" max-width="600px" persistent>
-      <v-card color="surface" class="pa-4 border-subtle">
-        <v-card-title class="text-h5 text-white">Novo Tópico</v-card-title>
-        <v-card-text>
-          <v-form v-model="valid">
-            <v-text-field v-model="form.title" label="Título" required variant="outlined" color="primary"></v-text-field>
-            <v-select v-model="form.courseId" :items="courses" item-title="name" item-value="id" label="Selecione o Curso" required variant="outlined" color="primary"></v-select>
-            <v-textarea v-model="form.message" label="Mensagem" required variant="outlined" color="primary" rows="5"></v-textarea>
-          </v-form>
-        </v-card-text>
-        <v-card-actions>
+    <v-row v-else class="mb-12">
+      <v-col 
+        v-for="topic in topicStore.topics" 
+        :key="topic.id" 
+        cols="12" 
+        md="6" 
+        lg="4"
+        class="pa-3 pa-md-4"
+      >
+        <v-card 
+          variant="outlined"
+          class="topic-card pa-6 pa-md-8 bg-surface border-all transition-fast h-100 d-flex flex-column rounded-xl elevation-2"
+          @click="router.push('/topics/' + topic.id)"
+        >
+          <div class="d-flex justify-space-between align-start mb-6">
+            <BaseChip color="secondary" variant="tonal" class="text-[10px] uppercase font-bold px-3">
+              {{ topic.course }}
+            </BaseChip>
+            <BaseChip :color="getStatusColor(topic.status)" class="text-[10px] font-bold px-3">
+              {{ topic.status }}
+            </BaseChip>
+          </div>
+
+          <h3 class="text-xl font-weight-bold text-text-primary line-clamp-2 mb-4 leading-tight">
+            {{ topic.title }}
+          </h3>
+          
+          <p class="text-base text-text-secondary line-clamp-3 mb-8 leading-relaxed opacity-80">
+            {{ topic.message }}
+          </p>
+
           <v-spacer></v-spacer>
-          <v-btn color="grey" variant="text" @click="topicStore.closeDialog()">Cancelar</v-btn>
-          <v-btn color="primary" variant="flat" :loading="saving" :disabled="!valid" @click="handleSave">Postar Tópico</v-btn>
-        </v-card-actions>
+
+          <div class="d-flex align-center justify-space-between mt-auto pt-6 border-t">
+            <div class="d-flex align-center">
+              <v-avatar size="28" color="primary" class="mr-3 text-white font-bold elevation-2">
+                {{ topic.author.charAt(0).toUpperCase() }}
+              </v-avatar>
+              <div class="d-flex flex-column overflow-hidden">
+                <span class="text-xs font-weight-bold text-text-primary text-truncate" style="max-width: 120px;">{{ topic.author }}</span>
+                <span class="text-[10px] text-secondary">{{ formatDate(topic.createdAt) }}</span>
+              </div>
+            </div>
+            <FavoriteButton :topicId="topic.id" size="24" @click.stop />
+          </div>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <!-- Pagination -->
+    <div class="d-flex justify-center py-12">
+      <v-pagination
+        v-model="topicStore.pagination.page"
+        :length="topicStore.pagination.totalPages"
+        :total-visible="mobile ? 3 : 7"
+        active-color="primary"
+        variant="flat"
+        class="elevation-4 rounded-pill bg-surface pa-1"
+        @update:model-value="(p) => topicStore.fetchTopics(p - 1)"
+      ></v-pagination>
+    </div>
+
+    <!-- New Topic Dialog -->
+    <v-dialog v-model="topicStore.showDialog" :fullscreen="mobile" :max-width="mobile ? '100%' : '700px'" transition="dialog-bottom-transition" persistent>
+      <v-card color="surface" class="border elevation-24 rounded-lg overflow-hidden">
+        <v-toolbar flat color="surface" class="border-b px-4" height="72">
+          <v-btn icon color="text-primary" @click="topicStore.closeDialog()"><v-icon>mdi-close</v-icon></v-btn>
+          <v-toolbar-title class="text-xl font-bold text-text-primary">Novo Tópico</v-toolbar-title>
+          <v-spacer></v-spacer>
+          <v-btn color="primary" variant="flat" :disabled="!valid" :loading="saving" class="px-8 font-weight-bold text-black rounded-pill" height="44" @click="handleSave">POSTAR</v-btn>
+        </v-toolbar>
+        <div class="pa-8 pa-md-12 overflow-y-auto bg-surface">
+          <v-form v-model="valid" @submit.prevent="handleSave">
+            <div class="d-flex flex-column gap-8">
+              <v-text-field v-model="form.title" label="Título do Tópico" placeholder="O que você deseja compartilhar ou perguntar?" variant="outlined" required :rules="[v => !!v || 'Campo obrigatório']" autofocus />
+              <v-select v-model="form.courseId" :items="courses" item-title="name" item-value="id" label="Assunto / Curso" variant="outlined" required :rules="[v => !!v || 'Selecione um curso']" />
+              <v-textarea v-model="form.message" label="Descrição" placeholder="Forneça detalhes para que a comunidade possa ajudar..." variant="outlined" rows="10" required :rules="[v => !!v || 'Campo obrigatório']" />
+            </div>
+          </v-form>
+        </div>
       </v-card>
     </v-dialog>
+
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000">{{ snackbar.text }}</v-snackbar>
   </v-container>
 </template>
 
 <style scoped>
-.topico-card { 
-  transition: all 0.2s ease; 
-  border: 1px solid rgba(255, 255, 255, 0.05) !important; 
+.topic-card {
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  border-color: rgba(var(--v-border-color), 0.15) !important;
 }
-.topico-card:hover { 
-  border: 1px solid rgba(0, 240, 255, 0.2) !important; 
-  background-color: rgba(255, 255, 255, 0.02) !important;
+.topic-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(var(--v-theme-primary), 0.5) !important;
+  background-color: rgba(var(--v-theme-primary), 0.04) !important;
+  box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6) !important;
 }
-.border-subtle { 
-  border: 1px solid rgba(255, 255, 255, 0.1) !important; 
-}
-.filter-select {
-  max-width: 200px;
-  min-width: 150px;
-}
-.search-field {
-  flex-grow: 1;
-  min-width: 250px;
-}
+.border-t { border-top: 1px solid rgba(var(--v-border-color), 0.1) !important; }
+.border-all { border: 1px solid rgba(var(--v-border-color), 0.1) !important; }
 </style>

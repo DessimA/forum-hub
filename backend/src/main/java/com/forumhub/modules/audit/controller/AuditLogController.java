@@ -34,14 +34,17 @@ public class AuditLogController {
 
     @PostMapping("/{id}/restore")
     @PreAuthorize("hasRole('ADMIN')")
-    @Operation(summary = "Restore deleted entity", description = "Restores a previously deleted topic or answer from the audit log record.",
+    @Operation(summary = "Restore deleted entity", description = "Restores a previously deleted topic or answer from the audit log record. If it's a topic, you can optionally restore all its associated answers.",
         responses = {
             @ApiResponse(responseCode = "200", description = "Entity restored successfully"),
             @ApiResponse(responseCode = "403", description = "Forbidden: Admin role required"),
             @ApiResponse(responseCode = "404", description = "Log entry not found")
         })
-    public ResponseEntity<Void> restore(@PathVariable UUID id) {
-        service.restore(id);
+    public ResponseEntity<Void> restore(
+            @PathVariable UUID id,
+            @RequestParam(defaultValue = "false") boolean includeAnswers
+    ) {
+        service.restore(id, includeAnswers);
         return ResponseEntity.ok().build();
     }
 

@@ -10,3 +10,8 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: update
+
+api:
+  security:
+    ratelimit:
+      max-requests: 1000 # Increased for E2E tests

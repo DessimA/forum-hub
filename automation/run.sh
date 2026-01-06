@@ -11,7 +11,12 @@ PROJECT_ROOT="$( cd "$SCRIPT_DIR/.." && pwd )"
 COMPOSE_FILE="$PROJECT_ROOT/infra/docker-compose.yml"
 TEST_COMPOSE_FILE="$PROJECT_ROOT/infra/docker-compose.test.yml"
 ENV_FILE="$PROJECT_ROOT/.env"
+LOG_DIR="$SCRIPT_DIR/logs"
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+LOG_FILE="$LOG_DIR/run_manager_$TIMESTAMP.log"
 CURRENT_PROFILE="dev"
+
+mkdir -p "$LOG_DIR"
 
 if docker compose version >/dev/null 2>&1; then
     DOCKER_CMD="docker compose"
@@ -29,33 +34,33 @@ header() {
     echo ""
 }
 
+log_action() {
+    echo "[$(date)] ACTION: $1 | SERVICE: ${2:-All} | PROFILE: $CURRENT_PROFILE" >> "$LOG_FILE"
+}
+
 execute_docker() {
     local service=$1
     local mode=$2
-    local profile_flag=""
     
-    if [ "$CURRENT_PROFILE" == "prod" ]; then
-        profile_flag="--profile prod"
-    else
-        profile_flag="--profile full"
-    fi
-
     cd "$PROJECT_ROOT"
 
     case $mode in
         1) # Clean Build
             echo -e "${YELLOW}Executando Limpeza Total e Reconstrução ($CURRENT_PROFILE)...${NC}"
-            $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" $profile_flag down -v
-            $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" $profile_flag build --no-cache $service
-            SPRING_PROFILES_ACTIVE=$CURRENT_PROFILE $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" $profile_flag up -d $service
+            $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" down -v
+            $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" build --no-cache $service
+            SPRING_PROFILES_ACTIVE=$CURRENT_PROFILE $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d $service
+            log_action "CLEAN_BUILD" "$service"
             ;;
         2) # Rebuild
             echo -e "${YELLOW}Reconstruindo e Iniciando ($CURRENT_PROFILE)...${NC}"
-            SPRING_PROFILES_ACTIVE=$CURRENT_PROFILE $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" $profile_flag up -d --build $service
+            SPRING_PROFILES_ACTIVE=$CURRENT_PROFILE $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d --build $service
+            log_action "REBUILD" "$service"
             ;;
         3) # Start
             echo -e "${YELLOW}Iniciando containers ($CURRENT_PROFILE)...${NC}"
-            SPRING_PROFILES_ACTIVE=$CURRENT_PROFILE $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" $profile_flag up -d $service
+            SPRING_PROFILES_ACTIVE=$CURRENT_PROFILE $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" up -d $service
+            log_action "QUICK_START" "$service"
             ;;
     esac
     
@@ -73,9 +78,9 @@ select_profile() {
     echo -n "Selecione o profile: "
     read p_choice
     case $p_choice in
-        1) CURRENT_PROFILE="dev" ;;
-        2) CURRENT_PROFILE="test" ;;
-        3) CURRENT_PROFILE="prod" ;;
+        1) CURRENT_PROFILE="dev" ;; 
+        2) CURRENT_PROFILE="test" ;; 
+        3) CURRENT_PROFILE="prod" ;; 
     esac
 }
 
@@ -108,23 +113,17 @@ while true; do
     read target
 
     case $target in
-        1) select_profile ;;
+        1) select_profile ;; 
         2) select_mode "backend" ;; 
         3) select_mode "frontend" ;; 
         4) select_mode "" ;; 
-        5) "$SCRIPT_DIR/test.sh" ;;
+        5) "$SCRIPT_DIR/test.sh" ;; 
         6) 
             echo -e "${RED}Parando TODOS os serviços e removendo recursos...${NC}"
-            
-            # 1. Tenta parar tudo via docker compose (incluindo testes e orfãos)
-            # Adiciona -v para remover volumes (limpeza completa de dados)
             $DOCKER_CMD --env-file "$ENV_FILE" -f "$COMPOSE_FILE" -f "$TEST_COMPOSE_FILE" down -v --remove-orphans
-            
-            # 2. Força bruta: Remove containers pelo nome explícito caso o compose falhe em rastreá-los
-            # Isso garante que a rede seja liberada
             echo -e "${YELLOW}Garantindo remoção de containers remanescentes...${NC}"
-            docker rm -f forumhub-backend forumhub-frontend forumhub-mysql forumhub-backend-test forumhub-frontend-test >/dev/null 2>&1
-            
+            docker rm -f forumhub-backend forumhub-frontend forumhub-mysql forumhub-redis forumhub-cypress forumhub-backend-test forumhub-frontend-test >/dev/null 2>&1
+            log_action "TOTAL_CLEANUP"
             echo -e "${GREEN}Limpeza concluída!${NC}"
             echo "Pressione qualquer tecla..."
             read -n 1

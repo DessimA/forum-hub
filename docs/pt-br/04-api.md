@@ -74,6 +74,13 @@ Gerenciamento de discussões.
 ### Usuários (`/api/v1/users`)
 - **GET** `/profile`: Dados do usuário logado.
 - **POST** `/{id}/block`: Bloqueio administrativo/moderativo (`BlockRequestDTO`).
+- **POST** `/{id}/unblock`: Remove punição ativa.
+- **PATCH** `/{id}/role`: Altera perfil de acesso (Exige permissão de ADMIN).
+
+### Auditoria e Recuperação (`/api/v1/admin/logs`)
+- **GET** `/`: Histórico completo de ações administrativas.
+- **POST** `/{id}/restore`: Restaura uma entidade excluída (Tópico ou Resposta) ao seu estado original.
+- **DELETE** `/{id}`: Exclui permanentemente o log de auditoria (Destruição definitiva).
 
 ### Favoritos (`/api/v1/favorites`)
 - **POST** `/topics/{topicId}`: Adiciona tópico aos favoritos do usuário.

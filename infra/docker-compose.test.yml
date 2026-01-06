@@ -20,3 +20,19 @@ services:
     container_name: forumhub-frontend-test
     networks:
       - forumhub-network
+
+  cypress:
+    image: cypress/included:13.17.0
+    container_name: forumhub-cypress
+    depends_on:
+      frontend:
+        condition: service_healthy
+    environment:
+      - CYPRESS_baseUrl=${CYPRESS_BASE_URL:-http://frontend:80}
+      - CYPRESS_API_URL=http://backend:8080
+    volumes:
+      - ../frontend/cypress:/app/cypress
+      - ../frontend/cypress.config.cjs:/app/cypress.config.js
+    working_dir: /app
+    networks:
+      - forumhub-network

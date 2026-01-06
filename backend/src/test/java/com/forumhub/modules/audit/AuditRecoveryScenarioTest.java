@@ -75,20 +75,53 @@ class AuditRecoveryScenarioTest {
         var topicLog = logs.stream().filter(l -> "TOPIC".equals(l.getEntityType())).findFirst().orElseThrow();
 
         // 3. Try to restore Answer first -> SHOULD FAIL
-        assertThatThrownBy(() -> auditLogService.restore(answerLog.getId()))
+        assertThatThrownBy(() -> auditLogService.restore(answerLog.getId(), false))
                 .isInstanceOf(BusinessValidationException.class)
                 .hasMessageContaining("Original topic");
 
         // 4. Restore Topic -> SHOULD SUCCEED
-        auditLogService.restore(topicLog.getId());
+        auditLogService.restore(topicLog.getId(), false);
         assertThat(topicRepository.findAll()).hasSize(1);
 
         // 5. Try to restore Answer again -> SHOULD NOW SUCCEED
-        auditLogService.restore(answerLog.getId());
+        auditLogService.restore(answerLog.getId(), false);
         
         var restoredAnswers = answerRepository.findAll();
         assertThat(restoredAnswers).hasSize(1);
         assertThat(restoredAnswers.get(0).getMessage()).isEqualTo("Child Message");
         assertThat(restoredAnswers.get(0).getTopic().getTitle()).isEqualTo("Parent");
+    }
+
+    @Test
+    @DisplayName("Should restore topic and all answers recursively")
+    @WithMockUser(username = "admin@test.com", roles = "ADMIN")
+    void recursiveRestorationScenario() {
+        // 1. Setup
+        var topicId = UUID.randomUUID();
+        var topic = topicRepository.save(Topic.builder().id(topicId).title("Parent").message("Body").author(author).course(course).build());
+        
+        var answerId = UUID.randomUUID();
+        var answer = answerRepository.save(Answer.builder().id(answerId).message("Recursive Child").author(author).topic(topic).build());
+        
+        // 2. Delete both
+        String ansLog = String.format("Message: %s | Author: %s | TopicId: %s", answer.getMessage(), author.getEmail(), topic.getId().toString());
+        auditLogService.logAction("DELETE", "ANSWER", answer.getId(), ansLog, "Recursive Test");
+        answerRepository.delete(answer);
+
+        String topLog = String.format("Title: %s | Message: %s | Author: %s | CourseId: %s", topic.getTitle(), topic.getMessage(), author.getEmail(), course.getId().toString());
+        auditLogService.logAction("DELETE", "TOPIC", topic.getId(), topLog, "Recursive Test");
+        topicRepository.delete(topic);
+
+        var topicLog = auditLogService.listAll().stream()
+                .filter(l -> "TOPIC".equals(l.getEntityType()))
+                .findFirst().orElseThrow();
+
+        // 3. Restore TOPIC with includeAnswers = true
+        auditLogService.restore(topicLog.getId(), true);
+
+        // 4. Verify both are back
+        assertThat(topicRepository.findById(topicId)).isPresent();
+        assertThat(answerRepository.findById(answerId)).isPresent();
+        assertThat(auditLogService.listAll()).isEmpty(); // Logs should be purged after restoration
     }
 }

@@ -26,13 +26,15 @@ const VTextField = { template: '<input />' }
 const VSelect = { template: '<select></select>' }
 const VTextarea = { template: '<textarea></textarea>' }
 const VSpacer = { template: '<div></div>' }
-const VBtn = { template: '<button></button>' }
+const VBtn = { template: '<button v-bind="$attrs"><slot /></button>' }
 const VIcon = { template: '<i></i>' }
+const BaseChip = { template: '<div><slot></slot></div>' }
+const FavoriteButton = { template: '<div></div>' }
 
 const globalComponents = {
   VLayout, VMain, VContainer, VRow, VCol, VChip, VCard, VCardText, VProgressCircular,
   VPagination, VDialog, VCardTitle, VCardActions, VForm, VTextField, VSelect,
-  VTextarea, VSpacer, VBtn, VIcon
+  VTextarea, VSpacer, VBtn, VIcon, BaseChip, FavoriteButton
 }
 
 describe('TopicListView', () => {

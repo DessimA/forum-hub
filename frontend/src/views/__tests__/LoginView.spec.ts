@@ -12,13 +12,15 @@ const VCard = { template: '<div><slot /></div>' }
 const VForm = { template: '<form><slot /></form>' }
 const VTextField = { 
   props: ['modelValue'], 
-  template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />' 
+  template: '<input :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'
 }
 const VAlert = { template: '<div class="alert"><slot /></div>' }
-const VBtn = { template: '<button type="submit"><slot /></button>' }
+const VBtn = { template: '<button type="submit"><slot /><slot name="loader" /></button>' }
+const AnimatedLogo = { template: '<div />' }
+const ThemeToggle = { template: '<div />' }
 
 const globalComponents = {
-  VContainer, VRow, VCol, VCard, VForm, VTextField, VAlert, VBtn
+  VContainer, VRow, VCol, VCard, VForm, VTextField, VAlert, VBtn, AnimatedLogo, ThemeToggle
 }
 
 const mockPush = vi.fn()
@@ -49,7 +51,7 @@ describe('LoginView', () => {
     await flushPromises()
 
     expect(authStore.login).toHaveBeenCalled()
-    expect(mockPush).toHaveBeenCalledWith('/')
+    expect(mockPush).toHaveBeenCalledWith('/topics')
   })
 
   it('displays error on failure', async () => {
@@ -61,7 +63,9 @@ describe('LoginView', () => {
     })
     
     const authStore = useAuthStore()
-    authStore.login = vi.fn().mockRejectedValue(new Error('Failed'))
+    authStore.login = vi.fn().mockRejectedValue({
+      response: { data: { message: 'Falha na autenticação. Verifique suas credenciais.' } }
+    })
 
     const inputs = wrapper.findAll('input')
     await inputs[0].setValue('test@test.com')
@@ -73,6 +77,6 @@ describe('LoginView', () => {
     await flushPromises()
 
     expect(wrapper.find('.alert').exists()).toBe(true)
-    expect(wrapper.find('.alert').text()).toContain('E-mail ou senha inválidos')
+    expect(wrapper.find('.alert').text()).toContain('Falha na autenticação. Verifique suas credenciais.')
   })
 })

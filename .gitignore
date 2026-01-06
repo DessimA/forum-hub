@@ -40,7 +40,7 @@ desktop.ini
 
 # Automation Scripts
 automation/commit-parts.sh
-automation/docker-cleanup.sh
+automation/cleanup_final.ps1
 automation/deep_clean.sh
 automation/auto_commit.sh
-automation/*.log
+automation/logs/*.log
