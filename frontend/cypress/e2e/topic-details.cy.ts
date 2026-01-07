@@ -12,16 +12,16 @@ describe('Topic Details UI', () => {
 
   it('should show the unified reply form', () => {
     cy.contains('Sua Resposta', { timeout: 15000 }).should('be.visible')
-    cy.get('textarea[placeholder="Descreva sua contribuição detalhadamente..."]').should('be.visible')
+    cy.get('textarea[placeholder="Sua contribuição..."]').should('be.visible')
   })
 
   it('should have responsive reply button', () => {
     // Desktop
     cy.viewport(1280, 720)
-    cy.contains('button', 'PUBLICAR RESPOSTA').should('be.visible')
+    cy.contains('button', 'POSTAR RESPOSTA').should('be.visible')
 
     // Mobile
     cy.viewport(375, 667)
-    cy.contains('button', 'PUBLICAR RESPOSTA').should('be.visible')
+    cy.contains('button', 'POSTAR RESPOSTA').should('be.visible')
   })
 })

@@ -1,7 +1,7 @@
 describe('Theme Toggle', () => {
   it('should toggle theme and persist after reload', () => {
     cy.visit('/login')
-    cy.contains('Acesse sua conta para continuar', { timeout: 15000 }).should('be.visible')
+    cy.contains('Acesse sua conta para participar da comunidade', { timeout: 15000 }).should('be.visible')
     
     // Get initial state
     cy.get('.auth-submit-btn').then(($btn) => {
@@ -24,7 +24,7 @@ describe('Theme Toggle', () => {
       
       // Check persistence after reload
       cy.reload()
-      cy.contains('Acesse sua conta para continuar').should('be.visible')
+      cy.contains('Acesse sua conta para participar da comunidade').should('be.visible')
       cy.get('.auth-submit-btn', { timeout: 20000 }).should('have.css', 'background-color', targetColor)
     })
   })

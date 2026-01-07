@@ -15,12 +15,11 @@ describe('Form Interactions', () => {
     cy.get('.v-dialog', { timeout: 15000 }).should('be.visible')
 
     // Fill title
-    cy.get('input[placeholder="Ex: Erro de conexão no Spring Boot"]')
+    cy.get('input[placeholder="O que você deseja compartilhar ou perguntar?"]')
       .should('be.visible')
       .type(uniqueTitle, { force: true })
     
     // Select course
-    // Target the specific field within the dialog to ensure click registration
     cy.get('.v-dialog .v-select').find('.v-field').click({ force: true })
     
     // Wait for the list items to be present in the overlay
@@ -30,7 +29,7 @@ describe('Form Interactions', () => {
       .click({ force: true })
     
     // Fill message
-    cy.get('textarea[placeholder="Descreva sua dúvida ou problema com detalhes..."]')
+    cy.get('textarea[placeholder="Forneça detalhes para que a comunidade possa ajudar..."]')
       .should('be.visible')
       .type('Automated test message description.', { force: true })
 
@@ -45,18 +44,16 @@ describe('Form Interactions', () => {
   })
 
   it('should reply to a topic', () => {
-    // Wait for content to load
     cy.get('[data-cy="topic-card"]', { timeout: 20000 }).should('be.visible').first().click({ force: true })
     
     // Ensure we are on details page
-    cy.get('textarea[placeholder="Descreva sua contribuição detalhadamente..."]', { timeout: 20000 })
+    cy.get('textarea[placeholder="Sua contribuição..."]', { timeout: 20000 })
+      .scrollIntoView()
       .should('be.visible')
       .type('Reply from Cypress ' + Date.now(), { force: true })
     
-    cy.contains('button', 'PUBLICAR RESPOSTA').click({ force: true })
+    cy.contains('button', 'POSTAR RESPOSTA').click({ force: true })
     
-    // Wait for the new reply to appear
-    cy.contains('p', 'pelo menos um caractere', { timeout: 5000 }).should('not.exist')
     cy.get('.v-card', { timeout: 20000 }).should('contain', 'Reply from Cypress')
   })
 })

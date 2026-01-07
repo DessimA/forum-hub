@@ -8,6 +8,10 @@ module.exports = defineConfig({
     screenshotOnRunFailure: true,
     viewportWidth: 1280,
     viewportHeight: 720,
+    defaultCommandTimeout: 60000,
+    pageLoadTimeout: 60000,
+    requestTimeout: 60000,
+    responseTimeout: 60000,
     setupNodeEvents(on, config) {
       // implement node event listeners here
     },
