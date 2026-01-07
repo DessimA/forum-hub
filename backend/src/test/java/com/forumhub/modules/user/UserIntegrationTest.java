@@ -6,6 +6,11 @@ import com.forumhub.modules.user.model.Profile;
 import com.forumhub.modules.user.model.User;
 import com.forumhub.modules.user.repository.ProfileRepository;
 import com.forumhub.modules.user.repository.UserRepository;
+import com.forumhub.modules.topic.repository.TopicRepository;
+import com.forumhub.modules.answer.repository.AnswerRepository;
+import com.forumhub.modules.favorite.repository.UserFavoriteRepository;
+import com.forumhub.modules.audit.repository.AuditLogRepository;
+import com.forumhub.modules.notification.repository.NotificationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +22,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -31,6 +38,11 @@ class UserIntegrationTest {
     @Autowired private ObjectMapper objectMapper;
     @Autowired private UserRepository userRepository;
     @Autowired private ProfileRepository profileRepository;
+    @Autowired private TopicRepository topicRepository;
+    @Autowired private AnswerRepository answerRepository;
+    @Autowired private UserFavoriteRepository favoriteRepository;
+    @Autowired private AuditLogRepository auditLogRepository;
+    @Autowired private NotificationRepository notificationRepository;
 
     private User adminUser;
     private User moderatorUser;
@@ -38,12 +50,17 @@ class UserIntegrationTest {
 
     @BeforeEach
     void setup() {
-        // Limpa para garantir isolamento
+        // Clean up all data to avoid FK violations and ensure isolation
+        auditLogRepository.deleteAll();
+        notificationRepository.deleteAll();
+        favoriteRepository.deleteAll();
+        answerRepository.deleteAll();
+        topicRepository.deleteAll();
         userRepository.deleteAll();
         
-        var adminProfile = profileRepository.findByName("ROLE_ADMIN").orElseGet(() -> profileRepository.save(new Profile(null, "ROLE_ADMIN")));
-        var modProfile = profileRepository.findByName("ROLE_MODERATOR").orElseGet(() -> profileRepository.save(new Profile(null, "ROLE_MODERATOR")));
-        var userProfile = profileRepository.findByName("ROLE_USER").orElseGet(() -> profileRepository.save(new Profile(null, "ROLE_USER")));
+        var adminProfile = profileRepository.findByName("ROLE_ADMIN").orElseGet(() -> profileRepository.save(new Profile(UUID.randomUUID(), "ROLE_ADMIN")));
+        var modProfile = profileRepository.findByName("ROLE_MODERATOR").orElseGet(() -> profileRepository.save(new Profile(UUID.randomUUID(), "ROLE_MODERATOR")));
+        var userProfile = profileRepository.findByName("ROLE_USER").orElseGet(() -> profileRepository.save(new Profile(UUID.randomUUID(), "ROLE_USER")));
 
         adminUser = userRepository.save(User.builder().name("Admin").email("integration-admin@test.com").password("123").profile(adminProfile).build());
         moderatorUser = userRepository.save(User.builder().name("Mod").email("integration-mod@test.com").password("123").profile(modProfile).build());
