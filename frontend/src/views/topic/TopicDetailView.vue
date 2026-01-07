@@ -207,7 +207,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <h1 class="text-adaptive-h1 font-weight-bold text-text-primary mb-6 leading-tight">
+        <h1 class="text-adaptive-h1 font-weight-bold text-text-primary mb-6 leading-tight" data-cy="topic-title">
           {{ topic.title }}
         </h1>
 
@@ -291,7 +291,7 @@ onMounted(() => {
     </div>
 
     <!-- Modais -->
-    <v-dialog v-model="showEditDialog" max-width="600"><v-card class="pa-8 bg-surface border-all elevation-24 rounded-lg"><h2 class="text-h5 font-weight-bold mb-8 text-text-primary">Editar Tópico</h2><v-text-field v-model="editForm.title" label="Título" variant="outlined" class="mb-6" /><v-select v-model="editForm.courseId" :items="courses" item-title="name" item-value="id" label="Curso" variant="outlined" class="mb-6" /><v-textarea v-model="editForm.message" label="Mensagem" variant="outlined" rows="8" /><div class="d-flex justify-end gap-4 mt-8"><v-btn variant="text" @click="showEditDialog = false" class="font-weight-bold">CANCELAR</v-btn><v-btn color="primary" @click="handleUpdate" class="font-weight-bold px-10 text-black">SALVAR</v-btn></div></v-card></v-dialog>
+    <v-dialog v-model="showEditDialog" max-width="600"><v-card class="pa-8 bg-surface border-all elevation-24 rounded-lg"><h2 class="text-h5 font-weight-bold mb-8 text-text-primary">Editar Tópico</h2><v-text-field v-model="editForm.title" label="Título" variant="outlined" class="mb-6" bg-color="rgba(var(--v-theme-text-primary), 0.03)" /><v-select v-model="editForm.courseId" :items="courses" item-title="name" item-value="id" label="Curso" variant="outlined" class="mb-6" /><v-textarea v-model="editForm.message" label="Mensagem" variant="outlined" rows="8" /><div class="d-flex justify-end gap-4 mt-8"><v-btn variant="text" @click="showEditDialog = false" class="font-weight-bold">CANCELAR</v-btn><v-btn color="primary" @click="handleUpdate" class="font-weight-bold px-10 text-black">SALVAR</v-btn></div></v-card></v-dialog>
     <v-dialog v-model="showDeleteDialog" max-width="450"><v-card class="pa-8 border-all bg-surface elevation-24 rounded-lg"><h2 class="text-h5 font-bold text-text-primary mb-4 text-center">Excluir tópico?</h2><p class="text-base text-secondary mb-10 text-center">Esta ação é irreversível.</p><div class="d-flex justify-center gap-4"><v-btn variant="text" @click="showDeleteDialog = false" class="font-weight-bold">CANCELAR</v-btn><v-btn color="error" @click="deleteTopic" class="font-weight-bold px-8">CONFIRMAR</v-btn></div></v-card></v-dialog>
     <v-dialog v-model="showPunishDialog" max-width="450"><v-card class="pa-8 bg-surface border-all elevation-24 rounded-lg"><h2 class="text-h5 font-weight-bold mb-8 text-text-primary">Aplicar Punição</h2><v-textarea v-model="punishForm.justification" label="Justificativa" placeholder="Motivo..." variant="outlined" rows="4" class="mb-2" /><div class="d-flex justify-end gap-4 mt-6"><v-btn variant="text" @click="showPunishDialog = false" class="font-weight-bold">CANCELAR</v-btn><v-btn color="error" @click="confirmPunish" class="font-weight-bold px-8">CONFIRMAR</v-btn></div></v-card></v-dialog>
     <v-snackbar v-model="snackbar.show" :color="snackbar.color" :timeout="3000">{{ snackbar.text }}</v-snackbar>
@@ -329,5 +329,6 @@ onMounted(() => {
 .transition-fast { transition: all 0.2s ease-in-out !important; }
 .gap-2 { gap: 8px; }
 .gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
 .gap-6 { gap: 24px; }
 </style>

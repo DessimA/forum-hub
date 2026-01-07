@@ -84,6 +84,7 @@ onMounted(() => {
             v-model="topicStore.filters.search"
             placeholder="🔍 Buscar por título..."
             @update:model-value="topicStore.fetchTopics(0)"
+            data-cy="filter-search"
             variant="outlined"
             hide-details
             bg-color="surface"
@@ -101,6 +102,7 @@ onMounted(() => {
             hide-details
             bg-color="surface"
             @update:model-value="topicStore.fetchTopics(0)"
+            data-cy="filter-status"
           ></v-select>
         </v-col>
         <v-col cols="6" md="3" lg="2">
@@ -115,6 +117,7 @@ onMounted(() => {
             hide-details
             bg-color="surface"
             @update:model-value="topicStore.fetchTopics(0)"
+            data-cy="filter-curso"
           ></v-select>
         </v-col>
         <v-col cols="12" lg="3" class="d-flex gap-2">
@@ -126,6 +129,7 @@ onMounted(() => {
             hide-details
             bg-color="surface"
             class="flex-grow-1"
+            data-cy="filter-sort"
           ></v-select>
           <v-btn 
             variant="outlined" 
@@ -134,13 +138,14 @@ onMounted(() => {
             height="52"
             width="52"
             @click="topicStore.resetFilters()"
+            data-cy="filter-clear"
             class="border"
           ></v-btn>
         </v-col>
       </v-row>
     </div>
 
-    <!-- Topics Grid: 3 columns on LG+ -->
+    <!-- Topics Grid -->
     <v-row v-if="topicStore.loading" justify="center">
       <v-col cols="12" class="text-center py-16">
         <v-progress-circular indeterminate color="primary" size="64" width="6"></v-progress-circular>
@@ -160,6 +165,7 @@ onMounted(() => {
           variant="outlined"
           class="topic-card pa-6 pa-md-8 bg-surface border-all transition-fast h-100 d-flex flex-column rounded-xl elevation-2"
           @click="router.push('/topics/' + topic.id)"
+          data-cy="topic-card"
         >
           <div class="d-flex justify-space-between align-start mb-6">
             <BaseChip color="secondary" variant="tonal" class="text-[10px] uppercase font-bold px-3">
@@ -170,7 +176,7 @@ onMounted(() => {
             </BaseChip>
           </div>
 
-          <h3 class="text-xl font-weight-bold text-text-primary line-clamp-2 mb-4 leading-tight">
+          <h3 class="text-xl font-weight-bold text-text-primary line-clamp-2 mb-4 leading-tight" data-cy="topic-title">
             {{ topic.title }}
           </h3>
           
@@ -216,7 +222,7 @@ onMounted(() => {
           <v-btn icon color="text-primary" @click="topicStore.closeDialog()"><v-icon>mdi-close</v-icon></v-btn>
           <v-toolbar-title class="text-xl font-bold text-text-primary">Novo Tópico</v-toolbar-title>
           <v-spacer></v-spacer>
-          <v-btn color="primary" variant="flat" :disabled="!valid" :loading="saving" class="px-8 font-weight-bold text-black rounded-pill" height="44" @click="handleSave">POSTAR</v-btn>
+          <v-btn color="primary" variant="flat" :disabled="!valid" :loading="saving" class="px-8 font-weight-bold text-black rounded-pill" height="44" @click="handleSave" data-cy="submit-topic">POSTAR</v-btn>
         </v-toolbar>
         <div class="pa-8 pa-md-12 overflow-y-auto bg-surface">
           <v-form v-model="valid" @submit.prevent="handleSave">
