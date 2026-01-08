@@ -1,57 +1,82 @@
-# 06 - Automated Testing
+# 06 - Testing Strategy and Quality Assurance
 
-**FórumHub** uses a comprehensive testing pyramid, ensuring stability for both the Backend and Frontend.
+ForumHub's quality is ensured by a battery of automated tests covering everything from the smallest business rule to the complete user flow.
 
-## 🏛️ Testing Strategy
+## 📐 The Testing Pyramid
 
-### Backend (Java/Spring Boot)
-- **Unit Tests:** Business logic validation in isolation (JUnit 5 + Mockito).
-- **Integration Tests:** Validation of persistence (H2 Database) and security layer.
-- **Infrastructure Tests:** Real integration tests with **Redis** to validate Rate Limiting and L2 Cache.
-
-### Frontend (Vue.js)
-- **Unit Tests:** Component and store tests (Vitest).
-- **E2E (End-to-End):** Critical user flows (Cypress).
-  - *Hardening:* Tests have been optimized to handle Vuetify 3 animations using forced interactions (`{force: true}`) and explicit data loading waits (timeouts up to 30s).
-  - *Dynamic Data:* Usage of `Date.now()` to ensure unique titles in topic creation, preventing duplication errors between runs.
-
----
-
-## 🚀 Execution via Docker (Recommended)
-
-The project has an isolated testing environment that automatically starts the necessary services (Redis + H2).
-
-### Run all tests
-```bash
-./automation/test.sh
+```mermaid
+graph TD
+    E2E[Cypress E2E Tests]
+    INT[Integration Tests - JPA/Redis]
+    UNIT[Unit Tests - JUnit/Vitest]
+    
+    UNIT -->|Base| INT
+    INT -->|Core| E2E
+    
+    style E2E fill:#f9f,stroke:#333,stroke-width:2px
+    style INT fill:#bbf,stroke:#333,stroke-width:2px
+    style UNIT fill:#dfd,stroke:#333,stroke-width:2px
 ```
 
-### Stability Adjustments (CI/CD)
-To ensure high-frequency tests are not blocked, the backend in the `dev/test` profile has an expanded request limit:
-- **Rate Limit:** 1000 requests per minute (configured in `application-dev.yml`).
-- **Persistence:** Docker volumes ensure that the database state is preserved or cleaned as needed by the automation script.
+---
 
-### What the script does:
-1. Starts a dedicated **Redis** container for testing.
-2. Runs backend tests in the `backend-test` container (uses `test` profile).
-3. Runs frontend unit tests in the `frontend-test` container.
-4. Generates a consolidated report in the terminal.
+## 🧪 Backend Testing (Spring Boot)
+
+### 1. Unit Tests
+- **Focus:** Services and Business Rules.
+- **Tool:** JUnit 5 + Mockito.
+- **Example:** Validating that a blocked user cannot create a topic.
+
+### 2. Integration Tests
+- **Focus:** Persistence and Security.
+- **Tool:** `@SpringBootTest` with H2 Database.
+- **Flow:**
+```mermaid
+sequenceDiagram
+    participant Test
+    participant Context as Spring Context
+    participant DB as H2 Database (In-Memory)
+    
+    Test->>Context: Start Context (Profile: test)
+    Context->>DB: Create Flyway Schema
+    Test->>Context: POST /topics (Admin)
+    Context->>DB: INSERT
+    DB-->>Context: OK
+    Context-->>Test: 201 Created
+```
 
 ---
 
-## 🛠️ Testing Infrastructure Details
+## 🖥️ Frontend Testing (Vue & Cypress)
 
-### Test Profile (`application-test.yml`)
-- **Database:** H2 Database (In-Memory with MySQL mode).
-- **Cache:** Real Redis (connected via internal Docker network).
-- **Rate Limit:** Adjusted to lower limits in specific tests for fast validation.
+### 1. Unit Tests (Vitest)
+- Validation of Mappers, date formatters, and Store logic.
 
-### Redis Resilience
-Integration tests use the `RestPage` utility to validate correct serialization in Redis. If Redis is offline, the system enters an automatic fallback mode, logging a warning but allowing the application to continue functioning.
+### 2. End-to-End Tests (Cypress)
+Cypress simulates a real browser and interacts with the system as a human would.
+
+**Resilience Flow (Hardening):**
+Due to the asynchronous nature of Vue and Docker, we apply "smart wait" strategies:
+1.  `cy.visit('/topics')`
+2.  `cy.get('[data-cy="topic-card"]', { timeout: 60000 })` - Waits up to 60s for DB loading.
+3.  `cy.contains('h1', 'Explore Topics')` - Ensures the layout is stable.
 
 ---
 
-## 📊 Coverage and Quality
-- **Backend Target:** > 80% coverage.
-- **Frontend Target:** > 75% coverage.
-- **Golden Rule:** No code is integrated into the `main` branch without passing 100% of the automated tests.
+## 🚀 Automation Pipeline (`automation/test.sh`)
+
+The test script automates environment setup to ensure isolation.
+
+```mermaid
+graph LR
+    Start((Run test.sh)) --> Build[Docker Build Test Images]
+    Build --> Redis[Start Ephemeral Redis]
+    Redis --> Backend[Run Maven Test]
+    Backend --> Frontend[Run Vitest]
+    Frontend --> Report[Generate Consolidated Report]
+```
+
+## 📝 Test Implementation Notes
+- **`test` Profile:** The backend uses `application-test.yml`, which configures H2 as an in-memory database, making tests very fast.
+- **Isolation:** Each integration test method in the backend uses `@Transactional` to ensure the database is automatically "cleaned" (Rollback) after each execution, preventing test cross-contamination.
+- **Seeding:** `DataInitializer` is disabled in the test profile (`@Profile("!test")`) to ensure test data is manually controlled and predictable.

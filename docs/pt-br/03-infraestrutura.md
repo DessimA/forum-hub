@@ -1,96 +1,78 @@
-# 03 - Infraestrutura e Docker
+# 03 - Infraestrutura: Docker e Orquestração
 
-O FórumHub adota uma filosofia **"Infrastructure as Code"** simplificada, onde todo o ambiente necessário para rodar o projeto (banco de dados, backend, frontend) é definido e orquestrado via Docker.
+O FórumHub opera sob o conceito de **Immutable Infrastructure** via containers. Este documento descreve como os componentes se comunicam na rede Docker e como os volumes garantem a persistência.
 
-## 🐳 Containerização e Orquestração
+## 🐳 Topologia da Rede Docker
 
-Utilizamos `docker-compose` para gerenciar o ciclo de vida da aplicação.
+Todos os containers estão conectados na `forumhub-network`. O isolamento é total: o MySQL e o Redis **não são acessíveis fora da rede Docker**, exceto se explicitamente mapeados.
 
-### Serviços Principais
-
-| Serviço | Imagem | Porta Exposta | Função | Variáveis Críticas |
-| :--- | :--- | :--- | :--- | :--- |
-| **MySQL** | `mysql:8.4` | 3306 | Persistência de dados | `MYSQL_ROOT_PASSWORD` |
-| **Redis** | `redis:alpine` | 6379 | Cache L2 e Rate Limit | - |
-| **Backend** | `eclipse-temurin:17` | 8080 | API Spring Boot | `SPRING_DATA_REDIS_HOST`, `API_SECURITY_TOKEN_SECRET` |
-| **Frontend** | `nginx:stable-alpine` | 80 / 3000 | Servidor Web / Proxy | - |
-
----
-
-## ⚡ Performance e Resiliência (Redis)
-
-O FórumHub utiliza **Redis** para duas funções críticas:
-1. **L2 Cache:** Armazenamento de resultados de listagens paginadas para evitar acessos repetitivos ao MySQL.
-2. **Rate Limiting:** Controle de vazão de requisições por IP.
-
-### Configuração de Rede
-Todos os containers operam na rede interna `forumhub-network`. O Backend comunica-se com o Redis através do hostname `redis`, garantindo isolamento e facilidade de configuração via DNS interno do Docker.
-
-### Resiliência Automática
-A aplicação foi desenvolvida com **Fail-Safe** para o cache. Caso o serviço Redis fique offline, o Backend captura a exceção, loga um aviso (`WARN`) e redireciona a requisição diretamente para o banco de dados, garantindo que o sistema permaneça funcional.
+```mermaid
+graph TD
+    User((Usuário)) -->|Port 80| Nginx[Container: Frontend / Nginx]
+    
+    subgraph "Docker Internal Network (forumhub-network)"
+        Nginx -->|Proxy /api| Backend[Container: Backend / Java]
+        Backend -->|Port 3306| MySQL[(Container: MySQL 8.4)]
+        Backend -->|Port 6379| Redis[(Container: Redis Cache)]
+    end
+    
+    subgraph "Persistence"
+        MySQL --- VolSQL[(Volume: db_data)]
+        Redis --- VolRedis[(Volume: redis_data)]
+    end
+```
 
 ---
 
-## 🔐 Gerenciamento de Segredos e Configuração
+## 🛠️ Ciclo de Vida do Container (Deployment Flow)
 
-**Segurança em Primeiro Lugar:** Nenhuma senha ou segredo é versionado no Git. O projeto utiliza um arquivo `.env` na raiz para injetar configurações sensíveis nos containers.
+Utilizamos scripts automatizados para garantir que o ambiente de desenvolvimento seja idêntico ao de produção.
 
-### Como Configurar
-1. Copie o arquivo de exemplo:
-   ```bash
-   cp .env.example .env
-   ```
-2. Edite o `.env` com suas credenciais (ou use os valores padrão para desenvolvimento local):
-   ```properties
-   MYSQL_ROOT_PASSWORD=root
-   API_SECURITY_TOKEN_SECRET=seu_segredo_jwt_aqui
-   ```
-
-> **Nota:** Os scripts de automação (`run.sh` e `test.sh`) são configurados para falhar caso o arquivo `.env` não exista ou as variáveis não sejam carregadas, prevenindo execução insegura.
-
----
-
-## ⚙️ Automação e Scripts (CLI)
-
-Para facilitar o dia-a-dia, criamos um CLI robusto em Bash.
-
-### 1. Gerenciador Principal (`automation/run.sh`)
-Interface interativa para construir e rodar o projeto.
-- **Uso:** `./automation/run.sh`
-- **Funcionalidades:**
-  - Seleção de Profiles (Dev, Test, Prod).
-  - Clean Build (limpa volumes e reconstrói).
-  - Quick Start (apenas sobe os containers).
-  - Carregamento automático do `.env`.
-
-### 2. Executor de Testes (`automation/test.sh`)
-Roda toda a suíte de testes em containers efêmeros, garantindo que o ambiente de teste seja idêntico ao de produção.
-- **Backend:** Executa `mvn test` em container isolado.
-- **Frontend:** Executa `npm run test:unit` em container Node.js.
-- **Integração:** Usa a flag `--env-file` para garantir que os testes tenham acesso às configurações corretas.
+```mermaid
+stateDiagram-v2
+    [*] --> Setup: Rodar automation/run.sh
+    Setup --> CheckEnv: Validar .env
+    CheckEnv --> DockerCompose: docker-compose up --build
+    
+    state DockerCompose {
+        MySQL_Up --> Flyway: Aplicar Migrations
+        Redis_Up --> CacheReady
+        Flyway --> Backend_Up
+        Backend_Up --> Frontend_Up
+    }
+    
+    Backend_Up --> Ready: Saúde OK (Healthcheck)
+    Ready --> [*]
+```
 
 ---
 
-## 🚀 Perfis de Ambiente (Spring Profiles)
+## ⚡ Cache e Resiliência (Redis Depth)
 
-O Backend suporta múltiplos perfis de configuração, controlados via `SPRING_PROFILES_ACTIVE`:
+### Como o Cache é gerenciado?
+1.  **Chave de Cache:** Composta pelo nome do método + parâmetros (ex: `topics::page0_size10`).
+2.  **Invalidação:** Sempre que um novo tópico é criado ou atualizado, o sistema chama `@CacheEvict(allEntries = true)`, garantindo que o usuário nunca veja dados obsoletos por mais de alguns milissegundos.
 
-| Profile | Arquivo Config | Comportamento Swagger | Logs SQL | Uso |
-| :--- | :--- | :--- | :--- | :--- |
-| **dev** | `application-dev.yml` | **Habilitado** | Ativos | Desenvolvimento Local |
-| **prod** | `application-prod.yml` | **Desabilitado** | Inativos | Produção / Deploy |
-| **test** | `application-test.yml` | Desabilitado | Mínimos | Testes Automatizados |
-
-### Segurança em Produção
-No perfil `prod`:
-- O Swagger (`/swagger-ui.html`) retorna 404/403.
-- Detalhes de erro do `Actuator` são ocultados.
-- Validação estrita do schema do banco (`validate`).
+### Estratégia de Rate Limit
+O Redis armazena o contador de acessos por IP com um TTL (Time To Live) de 60 segundos.
+- Se `IP_Count > 100` -> Retorna HTTP 429.
+- O TTL garante que o bloqueio expire automaticamente após um minuto de inatividade.
 
 ---
 
-## 🌐 Build Otimizado (Frontend)
+## 🔐 Configurações Sensíveis (O arquivo .env)
 
-O Frontend utiliza **Vite** com estratégia de **Manual Chunking** configurada no `vite.config.ts`.
-- **Resultado:** Separação das bibliotecas `vue` e `vuetify` em arquivos `.js` distintos (`vendor-vue`, `vendor-vuetify`).
-- **Benefício:** Melhor cacheamento pelo navegador e carregamento inicial mais rápido.
+O projeto depende de variáveis de ambiente. Abaixo, os detalhes de cada uma:
+
+| Variável | Função | Valor Padrão |
+| :--- | :--- | :--- |
+| `MYSQL_ROOT_PASSWORD` | Senha administrativa do MySQL | `root` |
+| `MYSQL_DATABASE` | Nome do banco criado no boot | `forumhub` |
+| `API_SECURITY_TOKEN_SECRET` | Chave para assinar os JWTs | (Mudar em Produção!) |
+| `SPRING_DATA_REDIS_HOST` | Hostname do Redis na rede Docker | `redis` |
+
+---
+
+## 📝 Notas de Manutenção
+- **Logs:** Os logs dos containers podem ser acessados via `docker-compose logs -f backend`. Eles estão configurados com o Logback do Spring para exibir cores no terminal e timestamps precisos.
+- **Wipe total:** Para resetar o ambiente completamente (incluindo o banco), deve-se usar `docker-compose down -v`, que remove os volumes persistentes.

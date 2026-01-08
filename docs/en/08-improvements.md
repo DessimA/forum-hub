@@ -1,16 +1,38 @@
-# 🚀 Improvement Roadmap
+# 08 - Evolution Plan and Roadmap
 
-This document details the next steps planned for the evolution of **FórumHub**. Completed infrastructure and stability items have been integrated into the project's main documentation.
+This document defines the long-term vision for **ForumHub**, organizing improvements into logical phases of technological maturity.
 
-## 🏗️ In Progress (Phase 2: UX and Globalization)
+## 🗺️ Visual Roadmap
 
-- [ ] **Frontend Internationalization:** Implementation of `vue-i18n` for multi-language support in the SPA (PT-BR and EN).
-- [ ] **RFC 7807 Standardization:** Implementation of Problem Details for more semantic API errors.
-- [ ] **Error UX Improvement:** Implementation of dynamic Snackbars and contextual feedback in the frontend based on translated backend responses.
+```mermaid
+timeline
+    title ForumHub Evolution Cycle
+    Phase 1 : Core Stabilization : Dockerization : JWT Auth : Flyway Migrations : Audit Logs
+    Phase 2 : Experience & Engagement : Deep Dark UI : Favorites System : Real-time Notifs (Polling) : i18n Backend
+    Phase 3 : Performance & Scale : WebSockets : Advanced Search (Elastic) : Cloud Storage : Admin Dashboard
+    Phase 4 : Globalization : vue-i18n Frontend : Multi-currency (Pro) : Social Login (OAuth2)
+```
 
-## 📅 Next Steps (Phase 3: Advanced Features)
+---
 
-- [ ] **Real-time Notifications:** Using WebSockets or Server-Sent Events (SSE) to alert users about new replies.
-- [ ] **Image Upload:** Support for user avatars and evidence in topics using cloud storage (S3/MinIO).
-- [ ] **Admin Dashboard:** Visualization of usage statistics, audit logs, and Redis cache performance metrics.
-- [ ] **Advanced Search:** Integration with Elasticsearch or Lucene for high-performance textual search in topics.
+## 📈 Detailed Technical Improvements
+
+### 1. Transition to WebSockets (Notifications)
+- **Current:** Polling every 30s.
+- **Improvement:** Implement **Spring WebSocket + STOMP**.
+- **Benefit:** Drastic reduction in useless HTTP calls and instant alert delivery (< 1s).
+
+### 2. Full-Text Search (Elasticsearch)
+- **Current:** Search via SQL `LIKE %...%`.
+- **Improvement:** Integrate the `Topic` entity with an **Elasticsearch** cluster.
+- **Benefit:** Support for fuzzy terms, "did you mean?" functionality, and high performance over millions of records.
+
+### 3. Asset Management (Cloud Storage)
+- **Current:** No image support.
+- **Improvement:** Integration with **AWS S3** or **MinIO** for storing evidence in topics and profile pictures.
+
+---
+
+## 🛡️ Future Security
+- **Dynamic Rate Limit:** Adjust limits based on Role (e.g., Admins have higher limits).
+- **2FA (Two-Factor Auth):** Implement TOTP via Google Authenticator for administrative accounts.

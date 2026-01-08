@@ -1,221 +1,100 @@
-# 02 - Arquitetura de Software
+# 02 - Arquitetura de Software: O Mecanismo Interno
 
-Este documento detalha as decisões arquiteturais, o design do sistema e os padrões adotados no **FórumHub**. A aplicação segue os princípios de **Clean Code**, **SOLID** e utiliza uma arquitetura de **Monólito Modular** para garantir organização e escalabilidade sem a complexidade prematura de microsserviços.
+O FórumHub utiliza uma arquitetura de **Monólito Modular**. Isso significa que, embora o código seja um único deploy, os domínios são logicamente separados para evitar acoplamento.
 
-## 🏗️ Visão Geral (C4 Model)
-
-O FórumHub separa claramente o Frontend (SPA) do Backend (API REST), comunicando-se exclusivamente via JSON.
-
-### Diagrama de Container (C4 Level 2)
+## 🧱 Decomposição Modular
 
 ```mermaid
-graph TD
-    User("👤 Usuário<br/>(Browser/Mobile)")
-    
-    subgraph "Docker Host"
-        Nginx("🌐 Nginx Proxy<br/>(Port 80/443)")
-        
-        subgraph "Frontend Container"
-            VueApp("🖥️ Vue.js SPA<br/>(Vite Optimized)")
-        end
-        
-        subgraph "Backend Container"
-            SpringBoot("⚙️ Spring Boot API<br/>(Port 8080)")
-        end
-        
-        subgraph "Data Container"
-            MySQL("🗄️ MySQL 8.4<br/>(Port 3306)")
-        end
+graph LR
+    subgraph "Módulo de Segurança"
+        Security[Spring Security Config]
+        Token[JWT Token Service]
+        Validator[SecurityValidationService]
     end
 
-    User -->|HTTPS Request| Nginx
-    Nginx -->|Serve Static| VueApp
-    Nginx -->|Proxy /api| SpringBoot
-    SpringBoot -->|JPA/Hibernate| MySQL
-```
-
-### Arquitetura Interna do Backend (Modular Monolith)
-
-O backend é dividido em módulos de domínio independentes, reduzindo o acoplamento e facilitando a manutenção.
-
-```mermaid
-graph TD
-    subgraph "API Layer (Controllers)"
-        AuthController
-        TopicController
-        AnswerController
-        CourseController
-        UserController
-        AuditController
-        FavoriteController
-        NotificationController
-    end
-
-    subgraph "Core Modules (Service/Domain)"
-        Auth[Auth Module]
+    subgraph "Módulos de Domínio"
+        User[User Module]
         Topic[Topic Module]
         Answer[Answer Module]
-        Course[Course Module]
-        User[User Module]
-        Audit[Audit Module]
         Favorite[Favorite Module]
         Notification[Notification Module]
     end
 
-    subgraph "Infrastructure"
-        Security["Spring Security / JWT"]
-        Docs["SpringDoc OpenAPI"]
-        I18n["MessageSource (EN/PT-BR)"]
-        DB["MySQL Database"]
+    subgraph "Módulo Transversal"
+        Audit[Audit & Restore Module]
+        Common[Global Exception Handler]
     end
 
-    AuthController --> Auth
-    TopicController --> Topic
-    AnswerController --> Answer
-    CourseController --> Course
-    UserController --> User
-    AuditController --> Audit
-
-    Auth --> User
-    Topic --> Course
-    Topic --> User
-    Answer --> Topic
-    Answer --> User
+    User --- Topic
+    Topic --- Answer
+    Topic --- Favorite
+    Topic --- Notification
     
-    Auth --> Security
-    Topic --> Security
-    Answer --> Security
-    User --> Security
+    Validator --> User
+    Validator -.-> Topic
+    Validator -.-> Answer
     
-    Auth --> DB
-    Topic --> DB
-    Answer --> DB
-    Course --> DB
-    User --> DB
-    Audit --> DB
-
-    Auth --> I18n
-    Topic --> I18n
-    
-    AuthController --> Docs
-    TopicController --> Docs
+    Topic --> Audit
+    Answer --> Audit
 ```
 
 ---
 
-## 🏛️ Decisões Arquiteturais (ADRs)
+## 🔐 Fluxo de Autenticação e Validação de Bloqueio
 
-### 1. Separação Frontend-Backend (Decoupled Architecture)
-- **Decisão:** Separar a UI (Vue.js) da Lógica de Negócio (Spring Boot).
-- **Status:** Implementado.
-- **Motivação:** Permite o desenvolvimento independente das equipes e facilita a escalabilidade horizontal do backend.
-
-### 2. Autenticação Stateless (JWT)
-- **Decisão:** Uso de JSON Web Tokens (JWT) para autenticação.
-- **Status:** Implementado e Documentado com Swagger.
-- **Detalhe:** Implementado suporte a **Bearer Auth** no Swagger UI, permitindo testes protegidos diretamente no navegador.
-
-### 3. Migração de Banco de Dados (Flyway)
-- **Decisão:** Uso do Flyway para gerenciar o esquema do banco de forma versionada.
-- **Status:** Implementado (V1 a V6).
-
-### 4. Uso de UUIDs Determinísticos
-- **Decisão:** Utilizar `BINARY(16)` para todos os IDs primários.
-- **Motivação:** Performance superior a `VARCHAR(36)` e prevenção contra ataques de enumeração de IDs.
-
-### 5. Internacionalização (i18n)
-- **Decisão:** Backend responde mensagens de erro baseadas no header `Accept-Language`.
-- **Status:** Implementado (Arquivos `messages_en.properties` e `messages_pt_BR.properties`).
-- **Motivação:** Suporte global para a API, desacoplando as mensagens de erro do código fonte.
-
----
-
-## 🎨 Design System e UI/UX
-
-A aplicação adota uma estética **Deep Dark**, focada em legibilidade e redução de fadiga ocular, utilizando um Design System rigoroso.
-
-### Identidade Visual
-- **Fundo (Background):** Pure Black (#000000).
-- **Acentos (Accents):** Sky Blue (#38BDF8).
-- **Superfícies (Surface):** Dark Grey (#111111).
-- **Arredondamento (Border Radius):** Padrão de 4px para botões e cards.
-
-### Estratégia Responsiva (Mobile-First)
-- **Navegação Adaptativa:** Desktop utiliza barra fixa com links; Mobile utiliza menu hambúrguer com `v-navigation-drawer`.
-- **Layout de Cards:** Grid dinâmico que alterna de 3 colunas (Desktop) para 1 coluna (Mobile), garantindo área de toque adequada (mínimo 36px de altura para campos).
-
----
-
-## 🔌 Fluxos de Dados Críticos
-
-### 1. Sistema de Notificações
-O sistema utiliza uma estratégia de **Smart Polling** no frontend para manter o usuário atualizado sem sobrecarregar o servidor.
+Diferente de sistemas JWT comuns, o FórumHub valida o estado do usuário no banco de dados **a cada request de escrita**, mesmo que o token seja válido.
 
 ```mermaid
 sequenceDiagram
-    participant User as Frontend (Pinia)
-    participant API as NotificationController
-    participant DB as MySQL
+    participant User as Cliente (Frontend)
+    participant Filter as SecurityFilter
+    participant JWT as TokenService
+    participant DB as MySQL (Users)
+    participant Controller as Business Controller
 
-    rect rgb(20, 20, 20)
-    Note right of User: Polling a cada 30s
-    User->>API: GET /unread-count
-    API->>DB: countByUserIdAndIsReadFalse()
-    DB-->>API: Total: 5
-    API-->>User: { count: 5 }
-    User->>User: Atualiza Badge na Navbar
-    end
+    User->>Filter: Request + Bearer Token
+    Filter->>JWT: validateToken(token)
+    JWT-->>Filter: Valid (User UUID)
+    
+    Filter->>DB: findUserById(uuid)
+    DB-->>Filter: User Entity (status: ACTIVE)
+    
+    Filter->>Filter: Inject User in SecurityContext
+    
+    Filter->>Controller: Process Business Logic
+    
+    Note over Filter, DB: Se usuário estiver bloqueado no banco:
+    Filter->>DB: checkStatus()
+    DB-->>Filter: BLOCKED
+    Filter-->>User: 403 Forbidden (Motivo: Conta Suspensa)
 ```
 
-### 2. Auditoria e Restauração
-Fluxo de proteção contra deleção acidental ou maliciosa.
+---
+
+## 🚀 Camadas de Processamento (Layered Architecture)
+
+Cada módulo segue estritamente estas camadas:
+
+1.  **Web Layer (Controller):** Define os endpoints, recebe DTOs e valida a sintaxe básica via `@Valid`.
+2.  **Business Layer (Service):** Onde reside o "coração" do sistema. Orquestra transações (`@Transactional`) e valida regras de negócio (ex: "Não pode responder tópico fechado").
+3.  **Persistence Layer (Repository):** Abstração do Spring Data JPA sobre o SQL.
+4.  **Security Validation Layer:** Filtro interceptador que garante que o autor da ação é o dono do recurso ou um moderador.
+
+---
+
+## 📡 Fluxo de Notificações Assíncronas (Implementação Interna)
+
+Quando um evento ocorre (ex: nova resposta), o sistema dispara notificações para todos os interessados (quem favoritou o tópico).
 
 ```mermaid
-sequenceDiagram
-    participant Admin
-    participant Service as TopicService
-    participant Audit as AuditLogService
-    participant DB as MySQL
-
-    Admin->>Service: DELETE /topics/{id}
-    Service->>Audit: logDeletion(TopicData)
-    Audit->>DB: INSERT INTO audit_logs (snapshot_json)
-    Service->>DB: Physical DELETE (ou Logical)
-    
-    Note over Admin, DB: Posteriormente...
-    
-    Admin->>Audit: POST /admin/logs/{id}/restore
-    Audit->>DB: SELECT snapshot_json
-    Audit->>Service: reconstruct(TopicData)
-    Service->>DB: INSERT (com UUID original)
+graph TD
+    Trigger[Nova Resposta Criada] --> GetFavs[Buscar usuários que<br/>favoritaram o tópico]
+    GetFavs --> Loop{Para cada usuário}
+    Loop --> CreateNotif[Criar Notificação no DB]
+    CreateNotif --> Poll[Frontend detecta via Polling]
 ```
 
----
-
-## 📦 Padrões de Projeto (Design Patterns)
-
-### Backend
-- **Controller-Service-Repository:** Camadas clássicas bem definidas.
-- **DTO (Data Transfer Object):** 
-  - Exposição exclusiva de objetos imutáveis (`Java Records`).
-  - Nomenclatura e Documentação **100% em Inglês** (ex: `TopicRequestDTO`, `RegisterRequestDTO`).
-  - Anotações Swagger (`@Schema`) ricas em detalhes.
-- **Global Exception Handling:** Centralização de erros com `GlobalExceptionHandler`, retornando respostas padronizadas e traduzidas.
-
----
-
-## ⚡ Segurança e Performance (Infraestrutura)
-
-### 1. Camada de Cache Distribuído (Redis)
-- **Decisão:** Utilização do Redis como cache de segundo nível (L2 Cache).
-- **Motivação:** Reduzir a latência e o consumo de recursos do banco de dados MySQL em operações de leitura frequentes (listagens).
-- **Implementação:** Cache aplicado nas listagens de cursos e tópicos, com invalidação automática (`@CacheEvict`) em operações de escrita (POST/PUT/DELETE).
-
-### 2. Controle de Tráfego (Rate Limiting)
-- **Decisão:** Limitar requisições por IP utilizando Redis.
-- **Configuração:** Limite padrão de 100 requisições por minuto.
-- **Motivação:** Prevenir ataques de força bruta no login e mitigar tentativas de DoS (Denial of Service).
-
-### 3. Resiliência de Serialização (RestPage)
-- **Decisão:** Criação do wrapper `RestPage<T>` para objetos paginados.
-- **Motivação:** Resolver a limitação do Jackson ao deserializar objetos `PageImpl` do Spring Data vindos do cache Redis, eliminando a necessidade de construtores padrão ausentes na classe original.
+## 🛠️ Fundamentos de Infraestrutura
+- **CORS Config:** O backend permite requisições apenas da origem definida no `.env` (ex: `localhost:3000`), bloqueando sites maliciosos de acessarem a API.
+- **BCrypt:** Senhas são salvas com `cost factor 10`. Mesmo se o banco for vazado, as senhas levarão décadas para serem decifradas por força bruta.
+- **Connection Pooling:** Utilizamos **HikariCP** configurado para gerenciar o pool de conexões com o MySQL, garantindo que a aplicação aguente picos de tráfego sem derrubar o banco.

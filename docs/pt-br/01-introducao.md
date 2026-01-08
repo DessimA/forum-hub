@@ -1,21 +1,61 @@
-# 01 - Introdução
+# 01 - Introdução e Visão Geral do Ecossistema
 
-O **FórumHub** é uma aplicação Full Stack projetada como um desafio de backend para simular o comportamento de um fórum de discussões (como o da Alura). O projeto foca em **Segurança Proativa**, **Arquitetura Limpa** e **Experiência do Desenvolvedor (DX)**.
+O **FórumHub** não é apenas uma API de fórum, é um ecossistema Full Stack completo, projetado para demonstrar a viabilidade de um **Monólito Modular** moderno. Este documento detalha a fundação do projeto, seus objetivos estratégicos e a experiência pretendida para o usuário final.
 
-## 🎯 Objetivo
-Oferecer uma plataforma estável e segura onde usuários podem criar tópicos, responder dúvidas e moderadores podem manter a integridade da comunidade através de ferramentas avançadas de auditoria.
+## 🎯 Missão do Projeto
+Prover um ambiente de alta performance para troca de conhecimento técnico, onde a **segurança proativa** e a **integridade dos dados** são garantidas por camadas automatizadas de auditoria e moderação.
 
-## 🚀 Principais Tecnologias
-- **Backend:** Java 17 com Spring Boot 3.4.
-- **Frontend:** Vue.js 3 com Vuetify 3.
-- **Banco de Dados:** MySQL 8.4 com Flyway Migrations.
-- **Segurança:** Spring Security + JWT.
-- **Infraestrutura:** Docker & Docker Compose.
+## 🗺️ Fluxo de Valor (User Journey)
 
-## 🌟 Diferenciais
-1. **Design Deep Dark & Mobile-First:** Interface moderna com fundo "Pure Black" (#000000) e acentos "Sky Blue" (#38BDF8), otimizada para dispositivos móveis com menus adaptativos.
-2. **Favoritos e Notificações:** Sistema de engajamento que permite favoritar tópicos e receber alertas em tempo real sobre novas respostas e mudanças de status.
-3. **Auditoria Completa:** Cada exclusão gera um log que permite a restauração total do recurso, incluindo seu UUID original.
-4. **Segurança Proativa:** Verificação de bloqueio em tempo real, invalidando tokens de usuários punidos instantaneamente.
-5. **i18n Nativo:** Backend preparado para responder em múltiplos idiomas.
-6. **Build Otimizado:** Frontend configurado para máxima performance de carregamento.
+Abaixo, o fluxo macro que um usuário percorre desde o acesso até a interação avançada:
+
+```mermaid
+graph TD
+    Start((Acesso ao Sistema)) --> Auth{Autenticado?}
+    Auth -- Não --> Register[Cadastro / Login]
+    Register --> Auth
+    Auth -- Sim --> Dashboard[Explorar Tópicos]
+    
+    Dashboard --> Create[Criar Novo Tópico]
+    Dashboard --> Search[Buscar / Filtrar Tópicos]
+    Dashboard --> Favorite[Favoritar Tópico]
+    
+    Favorite --> Notify[Receber Notificações de Respostas]
+    Create --> View[Visualizar Detalhes do Tópico]
+    
+    View --> Reply[Postar Resposta]
+    Reply --> MarkSolution[Autor: Marcar como Solução]
+    
+    subgraph "Moderação & Auditoria"
+        Report[Comportamento Ofensivo] --> Block[Admin: Bloquear Usuário]
+        Block --> Cascade[Remoção em Cascata de Conteúdo]
+        Cascade --> Audit[Log de Auditoria Gerado]
+        Audit --> Restore[Possibilidade de Restauração Total]
+    end
+```
+
+## 🛠️ Stack Tecnológica Detalhada
+
+### Backend (O Cérebro)
+- **Java 17 & Spring Boot 3.4:** Core da aplicação.
+- **Spring Security + JWT:** Autenticação stateless com validação de bloqueio em tempo real.
+- **Spring Data JPA & Hibernate:** Mapeamento objeto-relacional robusto.
+- **Flyway:** Evolução controlada do schema SQL.
+- **Redis:** Cache de segundo nível e Rate Limiting.
+
+### Frontend (A Interface)
+- **Vue.js 3 (Composition API):** Lógica reativa moderna.
+- **Vuetify 3:** Framework de UI baseado em Material Design com tema **Deep Dark**.
+- **Pinia:** Gerenciamento de estado global descentralizado.
+- **Vite:** Ferramenta de build ultra-rápida.
+
+### Qualidade e Infraestrutura
+- **Docker & Docker Compose:** Orquestração de containers para MySQL, Redis e Aplicações.
+- **Cypress:** Testes End-to-End simulando o comportamento real do usuário.
+- **JUnit 5 & Mockito:** Testes unitários e de integração com alta cobertura.
+
+## 🌟 Detalhes Cruciais de Implementação
+- **Case Sensitivity:** A busca por títulos de tópicos é insensível a maiúsculas/minúsculas no MySQL para facilitar a UX.
+- **Timezone:** O sistema utiliza `UTC` internamente para todos os timestamps, convertendo para o local do usuário apenas na renderização do frontend.
+- **Resiliência:** Se o serviço de Redis falhar, a aplicação entra em modo *Pass-Through*, buscando dados diretamente no MySQL para evitar downtime.
+- **UUID v4:** IDs de tópicos, usuários e respostas não são sequenciais, impedindo que competidores ou atacantes estimem o volume de dados do fórum.

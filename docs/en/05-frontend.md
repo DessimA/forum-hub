@@ -1,67 +1,77 @@
-# 05 - Frontend (Vue.js 3)
+# 05 - Frontend: Reactive Architecture and UX
 
-ForumHub's frontend prioritizes clarity and efficiency, using the latest technologies from the Vue ecosystem.
+The ForumHub frontend is a **Single Page Application (SPA)** built with Vue.js 3, focused on response speed and immediate visual feedback.
 
-## 🎨 User Experience (UX)
-The interface uses the **Deep Dark** theme, optimizing the experience in low-light environments and following mobile-first standards.
+## 🏗️ Component Rendering Flow
 
-### Design System
-| Element | Specification |
-| :--- | :--- |
-| **Main Palette** | Pure Black (#000000) and Sky Blue (#38BDF8) |
-| **Typography** | Inter (or modern Sans-Serif standard) |
-| **Borders** | `border-radius: 4px` on all buttons and inputs |
-| **Transitions** | 150ms ease-in-out for hover interactions |
-
-### Responsive Behavior
-- **Mobile (< 960px):**
-  - Topics displayed in a single column (full-width).
-  - Floating or simplified "New Topic" button in the navbar.
-  - Sidebar hidden behind a hamburger menu.
-- **Desktop (> 1280px):**
-  - Topic grid in 3 columns.
-  - Direct navigation links in the App Bar.
-  - 1400px max-width to prevent visual dispersion.
-
----
-
-## 🏗️ State Management (Pinia)
-State is decentralized into stores:
-- **TopicStore:** Preserves `status`, `courseId`, and `title` filters during pagination.
-- **AuthStore:** Manages the JWT token and decodes roles for visual access control.
-- **FavoriteStore:** Maintains a local `Set` of favorited IDs to ensure the star icon is instantly synced between the general list and the details page.
-- **NotificationStore:** Polls every 30 seconds to update the alert counter. Clicking a notification marks it as read and navigates to the target topic.
-
----
-
-## 🧩 Shared Components
-- **FavoriteButton:** Reactive button that toggles favorite state with immediate visual feedback.
-- **NotificationBell:** Alert centralizer in the Navbar with "Mark all as read" support.
-- **AnimatedLogo:** Optimized SVG logo with subtle entry animations.
-
----
-
-## ⚡ Performance & Build
-
-### Bundle Optimization (Manual Chunking)
-To ensure fast initial loading, `vite.config.ts` is configured to split code into strategic chunks:
+Each view in Vue.js follows a rigorous lifecycle to ensure data is ready before interaction.
 
 ```mermaid
 graph TD
-    Main[index.html] -->|Loads| VendorVue[vendor-vue.js]
-    Main -->|Loads| VendorVuetify[vendor-vuetify.js]
-    Main -->|Loads| AppCode["index.js (App Logic)"]
+    Start((Navigate to /topics)) --> onMounted[Trigger: onMounted]
+    onMounted --> StoreCall[Store: fetchTopics]
+    StoreCall --> API[Axios: GET /topics]
+    API --> StoreUpdate[Store: Update topics state]
+    StoreUpdate --> ReactiveUI[DOM: Render v-for cards]
     
-    VendorVue --> VueCore
-    VendorVue --> Pinia
-    VendorVue --> Router
-    
-    VendorVuetify --> VuetifyLib
-    VendorVuetify --> Icons
+    subgraph "User Interaction"
+        Click[Click Favorite] --> ToggleFav[Action: addFavorite]
+        ToggleFav --> SyncSet[Update local Set]
+        SyncSet --> StarIcon[Star Icon changes to Filled]
+    end
 ```
 
-This prevents heavy libraries (like Vuetify) from being re-downloaded every time application logic changes, better utilizing browser caching.
+---
 
-### Security
-- **API Integration:** All HTTP calls pass through an interceptor in `src/services/api.ts` that automatically attaches the Bearer Token.
-- **401 Handling:** Automatic redirection to login upon token expiration.
+## 💾 Centralized State Management (Pinia Hierarchy)
+
+The application state is divided into independent "stores" that communicate when necessary.
+
+| Store | Responsibility | Critical Data |
+| :--- | :--- | :--- |
+| **AuthStore** | Session and Permissions | `jwt_token`, `user_roles` |
+| **TopicStore** | Listing and Pagination | `topics[]`, `totalPages` |
+| **FavoriteStore** | Global Synchronization | `favoriteTopicIds (Set)` |
+| **NotificationStore** | Polling and Alerts | `unreadCount` |
+
+### Favorite Synchronization
+We use a `Set` in `FavoriteStore` instead of an Array.
+- **Why?** `Set.has(id)` has O(1) performance, allowing the favorite icon to be rendered instantly even when listing hundreds of topics.
+
+---
+
+## 🎨 Design System and Fluid Typography
+
+The **Deep Dark** design uses pure colors to ensure the highest possible contrast on OLED screens.
+
+### Viewport Scaling (Fluidity)
+Not only is the layout responsive, but fonts and paddings are as well.
+
+```mermaid
+graph LR
+    Small[375px Mobile] -->|Font: 1.5rem| Layout{Fluid Engine}
+    Desktop[1920px Desktop] -->|Font: 2.5rem| Layout
+    Layout -->|clamp| ResultingUI[Smooth Rendering]
+```
+
+### Smart Buttons (Moderation Logic)
+The visibility of buttons like "Ban Author" or "Restore Topic" is controlled by **Computed Properties** that check roles in the `AuthStore`. If the user lacks permission, the element is not even rendered in the DOM (`v-if`).
+
+---
+
+## 📡 Notification Polling (Technical Implementation)
+
+The notification system does not use WebSockets to maintain simplicity and resilience.
+
+1.  **Trigger:** The `TheNavbar` component starts a `setInterval` in `onMounted`.
+2.  **Frequency:** Every 30 seconds.
+3.  **Action:** Calls `notificationStore.fetchUnreadCount()`.
+4.  **UX:** If the counter changes, the badge on the bell icon is updated with a "pulse" animation.
+
+---
+
+## 🛠️ Build Performance
+`vite.config.ts` uses **Manual Chunking** to separate application code from libraries:
+- `index.js`: ForumHub logic only (small, loads fast).
+- `vendor-vuetify.js`: UI library (heavy, permanently cached in the browser).
+- `vendor-vue.js`: Vue Core and Pinia (cached).

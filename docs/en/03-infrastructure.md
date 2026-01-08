@@ -1,90 +1,78 @@
-# 03 - Infrastructure and Docker
+# 03 - Infrastructure: Docker and Orchestration
 
-FórumHub adopts a simplified **"Infrastructure as Code"** philosophy, where all the environment necessary to run the project (database, backend, frontend) is defined and orchestrated via Docker.
+ForumHub operates under the concept of **Immutable Infrastructure** via containers. This document describes how components communicate within the Docker network and how volumes ensure persistence.
 
-## 🐳 Containerization and Orchestration
+## 🐳 Docker Network Topology
 
-We use `docker-compose` to manage the application lifecycle.
+All containers are connected to the `forumhub-network`. Isolation is total: MySQL and Redis are **not accessible outside the Docker network**, except if explicitly mapped.
 
-### Core Services
-
-| Service | Image | Exposed Port | Role | Critical Variables |
-| :--- | :--- | :--- | :--- | :--- |
-| **MySQL** | `mysql:8.4` | 3306 | Data Persistence | `MYSQL_ROOT_PASSWORD` |
-| **Redis** | `redis:alpine` | 6379 | L2 Cache & Rate Limit | - |
-| **Backend** | `eclipse-temurin:17` | 8080 | Spring Boot API | `SPRING_DATA_REDIS_HOST`, `API_SECURITY_TOKEN_SECRET` |
-| **Frontend** | `nginx:stable-alpine` | 80 / 3000 | Web Server / Proxy | - |
-
----
-
-## ⚡ Performance and Resilience (Redis)
-
-FórumHub uses **Redis** for two critical functions:
-1. **L2 Cache:** Storing paginated list results to avoid repetitive MySQL access.
-2. **Rate Limiting:** Request flow control per IP.
-
-### Network Configuration
-All containers operate on the internal `forumhub-network`. The Backend communicates with Redis via the `redis` hostname, ensuring isolation and ease of configuration via Docker's internal DNS.
-
-### Automatic Resilience
-The application was developed with **Fail-Safe** for the cache. If the Redis service goes offline, the Backend catches the exception, logs a warning (`WARN`), and redirects the request directly to the database, ensuring the system remains functional.
+```mermaid
+graph TD
+    User((User)) -->|Port 80| Nginx[Container: Frontend / Nginx]
+    
+    subgraph "Docker Internal Network (forumhub-network)"
+        Nginx -->|Proxy /api| Backend[Container: Backend / Java]
+        Backend -->|Port 3306| MySQL[(Container: MySQL 8.4)]
+        Backend -->|Port 6379| Redis[(Container: Redis Cache)]
+    end
+    
+    subgraph "Persistence"
+        MySQL --- VolSQL[(Volume: db_data)]
+        Redis --- VolRedis[(Volume: redis_data)]
+    end
+```
 
 ---
 
-## 🔐 Secrets and Configuration Management
+## 🛠️ Deployment Flow (Container Lifecycle)
 
-**Security First:** No passwords or secrets are versioned in Git. The project uses a `.env` file in the root to inject sensitive settings into containers.
+We use automated scripts to ensure the development environment is identical to production.
 
-### How to Configure
-1. Copy the example file:
-   ```bash
-   cp .env.example .env
-   ```
-2. Edit the `.env` with your credentials (or use default values for local development):
-   ```properties
-   MYSQL_ROOT_PASSWORD=root
-   API_SECURITY_TOKEN_SECRET=your_jwt_secret_here
-   ```
-
-> **Note:** Automation scripts (`run.sh` and `test.sh`) are configured to fail if the `.env` file does not exist or variables are not loaded, preventing insecure execution.
-
----
-
-## ⚙️ Automation and Scripts (CLI)
-
-To facilitate day-to-day operations, we created a robust Bash CLI.
-
-### 1. Main Manager (`automation/run.sh`)
-Interactive interface to build and run the project.
-- **Usage:** `./automation/run.sh`
-- **Features:**
-  - Profile Selection (Dev, Test, Prod).
-  - Clean Build (clears volumes and rebuilds).
-  - Quick Start (just starts containers).
-  - Automatic `.env` loading.
-
-### 2. Test Runner (`automation/test.sh`)
-Runs the entire test suite in ephemeral containers, ensuring the test environment is identical to production.
-- **Backend:** Executes `mvn test` in an isolated container.
-- **Frontend:** Executes `npm run test:unit` in a Node.js container.
-- **Integration:** Uses the `--env-file` flag to ensure tests have access to correct settings.
+```mermaid
+stateDiagram-v2
+    [*] --> Setup: Run automation/run.sh
+    Setup --> CheckEnv: Validate .env
+    CheckEnv --> DockerCompose: docker-compose up --build
+    
+    state DockerCompose {
+        MySQL_Up --> Flyway: Apply Migrations
+        Redis_Up --> CacheReady
+        Flyway --> Backend_Up
+        Backend_Up --> Frontend_Up
+    }
+    
+    Backend_Up --> Ready: Health OK (Healthcheck)
+    Ready --> [*]
+```
 
 ---
 
-## 🚀 Environment Profiles (Spring Profiles)
+## ⚡ Cache and Resilience (Redis Depth)
 
-The Backend supports multiple configuration profiles, controlled via `SPRING_PROFILES_ACTIVE`:
+### How is the Cache managed?
+1.  **Cache Key:** Composed of method name + parameters (e.g., `topics::page0_size10`).
+2.  **Invalidation:** Whenever a new topic is created or updated, the system calls `@CacheEvict(allEntries = true)`, ensuring the user never sees stale data for more than a few milliseconds.
 
-| Profile | Config File | Swagger Behavior | SQL Logs | Usage |
-| :--- | :--- | :--- | :--- | :--- |
-| **dev** | `application-dev.yml` | **Enabled** | Active | Local Development |
-| **prod** | `application-prod.yml` | **Disabled** | Inactive | Production / Deploy |
-| **test** | `application-test.yml` | Disabled | Minimal | Automated Testing |
+### Rate Limit Strategy
+Redis stores the access counter per IP with a TTL (Time To Live) of 60 seconds.
+- If `IP_Count > 100` -> Returns HTTP 429.
+- The TTL ensures that the block automatically expires after one minute of inactivity.
 
 ---
 
-## 🌐 Optimized Build (Frontend)
+## 🔐 Sensitive Configurations (The .env file)
 
-The Frontend uses **Vite** with a **Manual Chunking** strategy configured in `vite.config.ts`.
-- **Result:** Separation of `vue` and `vuetify` libraries into distinct `.js` files (`vendor-vue`, `vendor-vuetify`).
-- **Benefit:** Better browser caching and faster initial loading.
+The project relies on environment variables. Below are the details for each:
+
+| Variable | Function | Default Value |
+| :--- | :--- | :--- |
+| `MYSQL_ROOT_PASSWORD` | MySQL administrative password | `root` |
+| `MYSQL_DATABASE` | Database name created on boot | `forumhub` |
+| `API_SECURITY_TOKEN_SECRET` | Key to sign JWTs | (Change in Production!) |
+| `SPRING_DATA_REDIS_HOST` | Redis hostname in Docker network | `redis` |
+
+---
+
+## 📝 Maintenance Notes
+- **Logs:** Container logs can be accessed via `docker-compose logs -f backend`. They are configured with Spring's Logback to display colors in the terminal and precise timestamps.
+- **Total Wipe:** To reset the environment completely (including the database), use `docker-compose down -v`, which removes persistent volumes.

@@ -1,57 +1,82 @@
-# 06 - Testes Automatizados
+# 06 - Estratégia de Testes e Garantia de Qualidade
 
-O **FórumHub** utiliza uma pirâmide de testes abrangente, garantindo a estabilidade tanto do Backend quanto do Frontend.
+A qualidade do FórumHub é assegurada por uma bateria de testes automatizados que cobrem desde a menor regra de negócio até o fluxo completo do usuário.
 
-## 🏛️ Estratégia de Testes
+## 📐 A Pirâmide de Testes
 
-### Backend (Java/Spring Boot)
-- **Unitários:** Validação de regras de negócio em isolamento (JUnit 5 + Mockito).
-- **Integração:** Validação da persistência (H2 Database) e da camada de segurança.
-- **Infraestrutura:** Testes de integração real com **Redis** para validar Rate Limiting e Cache L2.
-
-### Frontend (Vue.js)
-- **Unitários:** Testes de componentes e stores (Vitest).
-- **E2E (End-to-End):** Fluxos críticos de usuário (Cypress).
-  - *Hardening:* Os testes foram otimizados para lidar com animações do Vuetify 3 usando interações forçadas (`{force: true}`) e esperas explícitas por carregamento de dados (timeouts de até 30s).
-  - *Dados Dinâmicos:* Uso de `Date.now()` para garantir títulos únicos em criações de tópicos, evitando erros de duplicidade entre execuções.
-
----
-
-## 🚀 Execução via Docker (Recomendado)
-
-O projeto possui um ambiente de testes isolado que sobe automaticamente os serviços necessários (Redis + H2).
-
-### Executar todos os testes
-```bash
-./automation/test.sh
+```mermaid
+graph TD
+    E2E[Cypress E2E Tests]
+    INT[Integration Tests - JPA/Redis]
+    UNIT[Unit Tests - JUnit/Vitest]
+    
+    UNIT -->|Base| INT
+    INT -->|Core| E2E
+    
+    style E2E fill:#f9f,stroke:#333,stroke-width:2px
+    style INT fill:#bbf,stroke:#333,stroke-width:2px
+    style UNIT fill:#dfd,stroke:#333,stroke-width:2px
 ```
 
-### Ajustes de Estabilidade (CI/CD)
-Para garantir que os testes de alta frequência não sejam bloqueados, o backend no perfil `dev/test` possui um limite de requisições ampliado:
-- **Rate Limit:** 1000 requisições por minuto (configurado em `application-dev.yml`).
-- **Persistence:** Volumes Docker garantem que o estado do banco seja preservado ou limpo conforme a necessidade do script de automação.
+---
 
-### O que o script faz:
-1. Sobe um container de **Redis** dedicado para os testes.
-2. Executa os testes de backend no container `backend-test` (USA profile `test`).
-3. Executa os testes unitários de frontend no container `frontend-test`.
-4. Gera um relatório consolidado no terminal.
+## 🧪 Testes de Backend (Spring Boot)
+
+### 1. Testes Unitários
+- **Foco:** Serviços e Regras de Negócio.
+- **Ferramenta:** JUnit 5 + Mockito.
+- **Exemplo:** Validar que um usuário bloqueado não pode criar um tópico.
+
+### 2. Testes de Integração
+- **Foco:** Persistência e Segurança.
+- **Ferramenta:** `@SpringBootTest` com H2 Database.
+- **Fluxo:**
+```mermaid
+sequenceDiagram
+    participant Test
+    participant Context as Spring Context
+    participant DB as H2 Database (In-Memory)
+    
+    Test->>Context: Iniciar Contexto (Profile: test)
+    Context->>DB: Criar Schema Flyway
+    Test->>Context: POST /topics (Admin)
+    Context->>DB: INSERT
+    DB-->>Context: OK
+    Context-->>Test: 201 Created
+```
 
 ---
 
-## 🛠️ Detalhes da Infraestrutura de Teste
+## 🖥️ Testes de Frontend (Vue & Cypress)
 
-### Profile de Teste (`application-test.yml`)
-- **Banco de Dados:** H2 Database (In-Memory com modo MySQL).
-- **Cache:** Redis real (conectado via rede Docker interna).
-- **Rate Limit:** Ajustado para limites menores em testes específicos para validação rápida.
+### 1. Testes Unitários (Vitest)
+- Validação de Mappers, formatadores de data e lógica das Stores.
 
-### Resiliência no Redis
-Os testes de integração utilizam o utilitário `RestPage` para validar a serialização correta no Redis. Caso o Redis esteja offline, o sistema entra em modo de fallback automático, logando um aviso mas permitindo que a aplicação continue funcionando.
+### 2. Testes End-to-End (Cypress)
+O Cypress simula um navegador real e interage com o sistema como um humano faria.
+
+**Fluxo de Resiliência (Hardening):**
+Devido à natureza assíncrona do Vue e do Docker, aplicamos estratégias de "espera inteligente":
+1.  `cy.visit('/topics')`
+2.  `cy.get('[data-cy="topic-card"]', { timeout: 60000 })` - Aguarda até 60s pelo carregamento do banco.
+3.  `cy.contains('h1', 'Explorar Tópicos')` - Garante que o layout está estável.
 
 ---
 
-## 📊 Cobertura e Qualidade
-- **Target Backend:** > 80% de cobertura.
-- **Target Frontend:** > 75% de cobertura.
-- **Regra de Ouro:** Nenhum código é integrado à branch `main` sem passar em 100% dos testes automatizados.
+## 🚀 Pipeline de Automação (`automation/test.sh`)
+
+O script de teste automatiza o levantamento do ambiente para garantir isolamento.
+
+```mermaid
+graph LR
+    Start((Rodar test.sh)) --> Build[Docker Build Test Images]
+    Build --> Redis[Subir Redis Efêmero]
+    Redis --> Backend[Rodar Maven Test]
+    Backend --> Frontend[Rodar Vitest]
+    Frontend --> Report[Gerar Relatório Consolidado]
+```
+
+## 📝 Notas de Implementação dos Testes
+- **Profile `test`:** O backend utiliza o arquivo `application-test.yml` que configura o banco H2 como banco em memória, o que torna os testes muito rápidos.
+- **Isolamento:** Cada método de teste de integração no backend utiliza `@Transactional` para garantir que o banco seja "limpado" automaticamente (Rollback) após cada execução, evitando que um teste influencie o outro.
+- **Seeding:** O `DataInitializer` é desativado no perfil de teste (`@Profile("!test")`) para garantir que os dados de teste sejam controlados manualmente e previsíveis.
