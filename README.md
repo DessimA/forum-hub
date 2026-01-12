@@ -11,24 +11,6 @@ O **FórumHub** é uma plataforma Full Stack de última geração para troca de 
 
 ---
 
-## 📽️ Demonstração em Vídeo
-
-Abaixo você pode conferir a plataforma em ação. Os vídeos detalham desde a interface do usuário até a robustez da documentação da API.
-
-### 1. Projeto em Execução (Deep Dark UI)
-Este vídeo demonstra o fluxo completo do usuário, o sistema de favoritos, notificações em tempo real e a responsividade mobile-first.
-
-https://github.com/DessimA/forum-hub/assets/docs/videos/demo-execucao.mp4
-
-### 2. Documentação e Testes (Swagger UI)
-Uma visão rápida sobre a documentação interativa OpenAPI/Swagger, detalhando os esquemas de segurança e os contratos dos DTOs.
-
-https://github.com/DessimA/forum-hub/assets/docs/videos/demo-swagger.mp4
-
-> *Nota: Caso os vídeos acima não carreguem, eles estão localizados em `/docs/videos/demo-execucao.mp4` e `/docs/videos/demo-swagger.mp4`.*
-
----
-
 ## 📋 Sobre o Projeto
 
 O FórumHub utiliza uma arquitetura de **Monólito Modular**, garantindo que cada domínio (Tópicos, Usuários, Cursos, Notificações) seja independente e fácil de manter.
